@@ -1,0 +1,22 @@
+# Root .dockerignore applies to the mcp build context (context: .)
+# Excludes everything not needed for the mcp container build.
+
+.git/
+.gitignore
+docs/
+scripts/
+secrets/
+backup/
+db/
+*.md
+*.db
+*.db-shm
+*.db-wal
+.env
+.env.*
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/

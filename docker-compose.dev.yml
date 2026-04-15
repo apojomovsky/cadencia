@@ -1,0 +1,45 @@
+# Development overlay. Run with:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# Changes from base:
+# - Bind-mounts source code for hot reload (no rebuild needed on code changes)
+# - Sets PYTHONPATH so the mounted source overrides the installed package
+# - Enables uvicorn --reload
+
+services:
+  app:
+    volumes:
+      - ./app/src:/dev_src:ro
+    environment:
+      PYTHONPATH: /dev_src
+      LOG_LEVEL: DEBUG
+    command:
+      - uvicorn
+      - em_journal.main:app
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8080"
+      - --reload
+      - --reload-dir
+      - /dev_src
+
+  mcp:
+    volumes:
+      - ./app/src:/dev_src_app:ro
+      - ./mcp/src:/dev_src_mcp:ro
+    environment:
+      PYTHONPATH: /dev_src_app:/dev_src_mcp
+      LOG_LEVEL: DEBUG
+    command:
+      - uvicorn
+      - em_journal_mcp.server:app
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8081"
+      - --reload
+      - --reload-dir
+      - /dev_src_mcp
+      - --reload-dir
+      - /dev_src_app

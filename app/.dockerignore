@@ -1,0 +1,15 @@
+# Applies to the app build context (context: ./app)
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+tests/
+*.db
+*.db-shm
+*.db-wal
+.env

@@ -1,0 +1,96 @@
+services:
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    image: em-journal-app:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - em_data:/data
+      - backup_status:/backup-status:ro
+    env_file:
+      - .env
+    environment:
+      DB_PATH: /data/em.db
+      BACKUP_STATUS_PATH: /backup-status/last.json
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - em_net
+
+  mcp:
+    build:
+      context: .
+      dockerfile: mcp/Dockerfile
+    image: em-journal-mcp:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8081:8081"
+    volumes:
+      - em_data:/data
+    env_file:
+      - .env
+    environment:
+      DB_PATH: /data/em.db
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8081/health')"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - em_net
+
+  backup:
+    build:
+      context: ./backup
+      dockerfile: Dockerfile
+    image: em-journal-backup:latest
+    restart: unless-stopped
+    volumes:
+      - em_data:/data:ro
+      - backup_status:/backup-status
+      # Mount secrets/ directory; rclone.conf is optional (backup runs without it)
+      - ./secrets:/secrets:ro
+    env_file:
+      - .env
+    environment:
+      DB_PATH: /data/em.db
+      BACKUP_STATUS_PATH: /backup-status/last.json
+      RCLONE_CONFIG: /secrets/rclone.conf
+    healthcheck:
+      test:
+        - CMD
+        - test
+        - -f
+        - /backup-status/last.json
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      # The backup script writes the sentinel at startup, so 30s is enough
+      start_period: 30s
+
+volumes:
+  em_data:
+    name: em_journal_data
+  backup_status:
+    name: em_journal_backup_status
+
+networks:
+  em_net:
+    driver: bridge
+    name: em_journal_net

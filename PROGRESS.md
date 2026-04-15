@@ -10,14 +10,14 @@ See `AGENTS.md` section "Commit workflow" for the full convention.
 
 ## Phase 0: Project scaffold
 
-- [ ] Directory structure and `pyproject.toml` for `app/` and `mcp/`
-- [ ] Base `Dockerfile` for `app` (multi-stage, non-root, pinned base image)
-- [ ] Base `Dockerfile` for `mcp`
-- [ ] Base `Dockerfile` for `backup`
-- [ ] `docker-compose.yml` (production-ready, healthchecks defined)
-- [ ] `docker-compose.dev.yml` (dev overlay with bind mounts and hot reload)
-- [ ] `.env.example` with all required variables documented
-- [ ] `README.md` with setup instructions (first-time rclone auth, first run)
+- [x] Directory structure and `pyproject.toml` for `app/` and `mcp/`
+- [x] Base `Dockerfile` for `app` (multi-stage, non-root, pinned base image)
+- [x] Base `Dockerfile` for `mcp`
+- [x] Base `Dockerfile` for `backup`
+- [x] `docker-compose.yml` (production-ready, healthchecks defined)
+- [x] `docker-compose.dev.yml` (dev overlay with bind mounts and hot reload)
+- [x] `.env.example` with all required variables documented
+- [x] `README.md` with setup instructions (first-time rclone auth, first run)
 
 **Verify**: `docker compose up` starts all three containers and healthchecks pass (no app code yet, just the containers boot cleanly).
 
