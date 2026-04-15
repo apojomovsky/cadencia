@@ -36,12 +36,12 @@ See `AGENTS.md` section "Commit workflow" for the full convention.
 
 ## Phase 2: Pydantic models
 
-- [ ] `models/people.py`: `PersonSummary`, `PersonDetail`, `CreatePersonInput`, `UpdatePersonInput`
-- [ ] `models/observations.py`: `Observation`, `AddObservationInput`
-- [ ] `models/one_on_ones.py`: `OneOnOne`, `LogOneOnOneInput`, `OneOnOnePreview`
-- [ ] `models/action_items.py`: `ActionItem`
-- [ ] `models/allocations.py`: `Allocation`, `UpdateAllocationInput`
-- [ ] `models/queries.py`: `StalenessReport`, `OneOnOnePrep`, `PersonOverview`
+- [x] `models/people.py`: `PersonSummary`, `PersonDetail`, `CreatePersonInput`, `UpdatePersonInput`
+- [x] `models/observations.py`: `Observation`, `AddObservationInput`
+- [x] `models/one_on_ones.py`: `OneOnOne`, `LogOneOnOneInput`, `OneOnOnePreview`
+- [x] `models/action_items.py`: `ActionItem`
+- [x] `models/allocations.py`: `Allocation`, `UpdateAllocationInput`
+- [x] `models/queries.py`: `StalenessReport`, `OneOnOnePrep`, `PersonOverview`
 
 **Verify**: `mypy app/src/` passes with no errors.
 
