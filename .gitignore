@@ -1,0 +1,43 @@
+# Environment
+.env
+.env.local
+secrets/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+htmlcov/
+.coverage
+
+# SQLite
+*.db
+*.db-shm
+*.db-wal
+
+# rclone
+rclone.conf
+
+# Docker
+.docker/
+
+# Backup sentinel (runtime artifact)
+backup-status/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
