@@ -25,10 +25,10 @@ See `AGENTS.md` section "Commit workflow" for the full convention.
 
 ## Phase 1: Database layer
 
-- [ ] `dolt/init/001_initial_schema.sql`: all five tables with CHECK constraints
-- [ ] `app/src/em_journal/db/connection.py`: SQLAlchemy Core engine, WAL mode enabled, foreign keys on
-- [ ] `app/src/em_journal/db/migrations.py`: migration runner with `_migrations` table, idempotent
-- [ ] Migration runs cleanly on fresh volume and is a no-op on subsequent restarts
+- [x] `app/src/em_journal/db/sql/001_initial_schema.sql`: all five tables with CHECK constraints
+- [x] `app/src/em_journal/db/connection.py`: SQLAlchemy Core engine, WAL mode enabled, foreign keys on
+- [x] `app/src/em_journal/db/migrations.py`: migration runner with `_migrations` table, idempotent
+- [x] Migration runs cleanly on fresh volume and is a no-op on subsequent restarts
 
 **Verify**: `docker compose up`, connect to app container, confirm all tables exist and `_migrations` shows `001_initial_schema` applied.
 
