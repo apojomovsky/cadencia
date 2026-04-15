@@ -7,7 +7,7 @@ RUN pip install --no-cache-dir uv
 COPY pyproject.toml ./
 # Minimal package stub so uv can resolve the package itself
 RUN mkdir -p src/em_journal && touch src/em_journal/__init__.py
-RUN uv pip install --system --no-cache .
+RUN uv pip install --system --no-cache ".[dev]"
 
 # Install source properly now that deps are cached
 COPY src/ ./src/
@@ -25,6 +25,10 @@ COPY --from=builder /usr/local/bin/uvicorn /usr/local/bin/uvicorn
 
 # Create mount points with correct ownership before switching user
 RUN mkdir -p /data /backup-status && chown app:app /data /backup-status
+
+# pyproject.toml for pytest config; tests for running inside the container
+COPY pyproject.toml ./
+COPY tests/ ./tests/
 
 USER app
 EXPOSE 8080

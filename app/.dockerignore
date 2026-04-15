@@ -8,7 +8,6 @@ __pycache__/
 *.egg-info/
 dist/
 build/
-tests/
 *.db
 *.db-shm
 *.db-wal

@@ -49,14 +49,14 @@ See `AGENTS.md` section "Commit workflow" for the full convention.
 
 ## Phase 3: Service layer
 
-- [ ] `services/people.py`: `list_people`, `get_person`, `resolve_person`, `create_person`, `update_person`
-- [ ] `services/observations.py`: `add_observation`, `list_observations`
-- [ ] `services/one_on_ones.py`: `log_one_on_one`, `get_upcoming_one_on_ones`
-- [ ] `services/action_items.py`: `get_open_action_items`, `complete_action_item`
-- [ ] `services/allocations.py`: `get_current_allocation`, `update_allocation`
-- [ ] `services/queries.py`: `whats_stale`, `prepare_one_on_one`, `get_person_overview`
-- [ ] `services/exceptions.py`: `NotFoundError`, `ValidationError`, `ConflictError`
-- [ ] Audit log emitted on every write (see SPEC.md section 4.4)
+- [x] `services/people.py`: `list_people`, `get_person`, `resolve_person`, `create_person`, `update_person`
+- [x] `services/observations.py`: `add_observation`, `list_observations`
+- [x] `services/one_on_ones.py`: `log_one_on_one`, `get_upcoming_one_on_ones`
+- [x] `services/action_items.py`: `get_open_action_items`, `complete_action_item`
+- [x] `services/allocations.py`: `get_current_allocation`, `update_allocation`
+- [x] `services/queries.py`: `whats_stale`, `prepare_one_on_one`, `get_person_overview`
+- [x] `services/exceptions.py`: `NotFoundError`, `ValidationError`, `ConflictError`
+- [x] Audit log emitted on every write (see SPEC.md section 4.4)
 
 **Verify**: `pytest app/tests/services/` passes. All happy-path tests use a real temp SQLite file, no mocks.
 
