@@ -37,6 +37,63 @@ The full product spec is in `docs/SPEC.md`. Read it before implementing anything
 
 ---
 
+## Commit workflow
+
+This project uses **conventional commits** and tracks progress via `PROGRESS.md`.
+
+### The rule
+
+Every commit that completes a checklist item in `PROGRESS.md` must also check that item in
+the same commit. Code change and checkbox land together. This keeps the progress file
+trustworthy: a checked box means working, committed code exists for it.
+
+### Conventional commit types used in this project
+
+| Type | When to use |
+|---|---|
+| `feat` | New user-visible functionality (a working MCP tool, a new web UI page) |
+| `fix` | Bug fix in existing functionality |
+| `refactor` | Code change with no behavior change |
+| `test` | Adding or fixing tests only |
+| `docs` | Changes to SPEC.md, PROGRESS.md, AGENTS.md, README.md, or decision records |
+| `chore` | Build files, Dockerfiles, docker-compose, pyproject.toml, .gitignore |
+| `style` | CSS, formatting, whitespace only |
+
+### Commit granularity
+
+Commits should map to the checklist items in `PROGRESS.md`. A single checklist item
+(e.g., "service layer for people.py") is one commit. A verify step that passes after
+multiple items is a good moment to pause and confirm nothing is broken before moving on.
+
+Do not group unrelated checklist items into one commit. Do not split a single checklist
+item across multiple commits unless the item turns out to be very large (in that case,
+split the checklist item first, then commit each piece).
+
+### Procedure for completing a checklist item
+
+1. Implement the work described by the item.
+2. Run the verify step for that phase (or the relevant subset of it).
+3. Stage the code changes.
+4. Edit `PROGRESS.md` to check the box: `- [ ]` becomes `- [x]`.
+5. Stage `PROGRESS.md`.
+6. Commit both together with a conventional commit message.
+
+Example commit for a service layer item:
+```
+feat(services): implement people service layer
+
+list_people, get_person, resolve_person, create_person, update_person.
+All happy-path tests pass against a real temp SQLite file.
+```
+
+### When to move items to the "Completed" section of PROGRESS.md
+
+Move a checked item to the "Completed" section (at the bottom of PROGRESS.md) once the
+entire phase it belongs to is done and verified. Include the commit SHA. This keeps the
+active checklist short and the history readable.
+
+---
+
 ## When implementing a new feature or fixing a bug
 
 1. Read the relevant section(s) of SPEC.md before writing code.
