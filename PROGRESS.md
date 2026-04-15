@@ -64,12 +64,12 @@ See `AGENTS.md` section "Commit workflow" for the full convention.
 
 ## Phase 4: API routes
 
-- [ ] `api/health.py`: `GET /health` returns 200 with backup sentinel status
-- [ ] `api/people.py`: list and detail endpoints
-- [ ] `api/one_on_ones.py`: create and complete endpoints
-- [ ] `api/action_items.py`: list and complete endpoints
-- [ ] `api/allocations.py`: create/update endpoint
-- [ ] FastAPI app factory wired up in `main.py`
+- [x] `api/health.py`: `GET /health` returns 200 with backup sentinel status
+- [x] `api/people.py`: list and detail endpoints
+- [x] `api/one_on_ones.py`: create and complete endpoints
+- [x] `api/action_items.py`: list and complete endpoints
+- [x] `api/allocations.py`: create/update endpoint
+- [x] FastAPI app factory wired up in `main.py`
 
 **Verify**: `pytest app/tests/api/` passes using `TestClient`. `GET /health` returns 200 inside the running container.
 

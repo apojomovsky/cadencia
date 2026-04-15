@@ -24,7 +24,12 @@ async def lifespan(application: FastAPI) -> AsyncGenerator[None, None]:
 
 app = FastAPI(title="EM Journal", version="0.1.0", lifespan=lifespan)
 
+# Routes
+from em_journal.api import action_items, allocations, health, observations, one_on_ones, people  # noqa: E402
 
-@app.get("/health")
-async def health() -> dict[str, object]:
-    return {"status": "ok", "version": "0.1.0"}
+app.include_router(health.router)
+app.include_router(people.router)
+app.include_router(observations.router)
+app.include_router(one_on_ones.router)
+app.include_router(action_items.router)
+app.include_router(allocations.router)
