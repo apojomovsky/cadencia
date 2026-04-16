@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 # EM Journal backup script.
-# Phase 7 wires up real rclone uploads and retention. For now:
-# - writes the sentinel file on startup so healthcheck passes
-# - performs the SQLite online backup and logs it
-# - skips rclone if config is missing (safe for development)
+# Runs on startup (writes sentinel immediately) then loops daily at BACKUP_HOUR.
+# Skips rclone upload if config is missing (safe for development).
 
 set -euo pipefail
 
@@ -34,6 +32,69 @@ write_sentinel() {
     fi
 }
 
+apply_retention() {
+    # Keep all backups from the last 30 days.
+    # Keep the most recent backup per ISO week for days 31-365.
+    # Delete anything older than 365 days.
+    if [[ ! -f "$RCLONE_CONFIG_FILE" ]]; then
+        return 0
+    fi
+
+    log "Applying retention policy..."
+
+    local today_epoch
+    today_epoch=$(date -u +%s)
+    local cutoff_30=$(( today_epoch - 30 * 86400 ))
+    local cutoff_365=$(( today_epoch - 365 * 86400 ))
+
+    local files
+    files=$(rclone --config="$RCLONE_CONFIG_FILE" lsf "${RCLONE_REMOTE}:${BACKUP_DEST_PATH}/" 2>/dev/null \
+        | grep -E '^em-journal-[0-9]{8}-[0-9]{6}\.db\.gz$' \
+        | sort) || true
+
+    if [[ -z "$files" ]]; then
+        return 0
+    fi
+
+    declare -A week_kept
+    local -a to_delete=()
+
+    while IFS= read -r fname; do
+        local datepart
+        datepart=$(echo "$fname" | sed 's/em-journal-\([0-9]\{8\}\)-.*/\1/')
+        local y="${datepart:0:4}" m="${datepart:4:2}" d="${datepart:6:2}"
+
+        local file_epoch
+        file_epoch=$(date -u -d "${y}-${m}-${d}" +%s 2>/dev/null) || continue
+
+        if (( file_epoch >= cutoff_30 )); then
+            # Last 30 days: keep all
+            continue
+        elif (( file_epoch < cutoff_365 )); then
+            # Older than 365 days: delete
+            to_delete+=("$fname")
+        else
+            # 31-365 days: keep most recent per week
+            local week_key
+            week_key=$(date -u -d "${y}-${m}-${d}" +%G-%V 2>/dev/null) || continue
+
+            if [[ -n "${week_kept[$week_key]+_}" ]]; then
+                # Files are sorted ascending; current file is newer, replace older
+                to_delete+=("${week_kept[$week_key]}")
+            fi
+            week_kept[$week_key]="$fname"
+        fi
+    done <<< "$files"
+
+    for fname in "${to_delete[@]:-}"; do
+        [[ -z "$fname" ]] && continue
+        log "Retention: deleting ${fname}"
+        rclone --config="$RCLONE_CONFIG_FILE" delete "${RCLONE_REMOTE}:${BACKUP_DEST_PATH}/${fname}" || true
+    done
+
+    log "Retention policy applied."
+}
+
 run_backup() {
     if [[ ! -f "$DB_PATH" ]]; then
         log "Database not found at $DB_PATH, skipping backup."
@@ -49,38 +110,37 @@ run_backup() {
 
     log "Starting backup..."
 
-    # SQLite online backup (safe under concurrent reads)
+    # SQLite online backup (safe under concurrent reads/writes)
     sqlite3 "$DB_PATH" ".backup ${tmp_db}"
     gzip -c "$tmp_db" > "$gz_file"
     rm -f "$tmp_db"
 
-    log "Backup compressed: $gz_file"
+    log "Backup compressed: ${gz_file} ($(du -sh "$gz_file" | cut -f1))"
 
-    # Upload via rclone if config exists
     if [[ -f "$RCLONE_CONFIG_FILE" ]]; then
         log "Uploading to ${RCLONE_REMOTE}:${BACKUP_DEST_PATH}/${dest_name}"
         rclone --config="$RCLONE_CONFIG_FILE" copy "$gz_file" "${RCLONE_REMOTE}:${BACKUP_DEST_PATH}/"
         log "Upload complete."
         write_sentinel "true" "$dest_name"
+        apply_retention
     else
-        log "rclone config not found at $RCLONE_CONFIG_FILE. Skipping upload."
-        log "Local backup available at: $gz_file"
+        log "rclone config not found at ${RCLONE_CONFIG_FILE}. Skipping upload (dev mode)."
         write_sentinel "true" "$dest_name"
     fi
 
     rm -f "$gz_file"
 }
 
-# Write startup sentinel so healthcheck passes immediately
+# Write startup sentinel immediately so the Docker healthcheck passes
 write_sentinel "true" "null"
-log "Backup service started."
+log "Backup service started. Will run daily at ${BACKUP_HOUR}:00 UTC."
 
-# Main loop: run backup once per day at the configured hour
+# Main loop
 while true; do
     current_hour="$(date +%-H)"
     if [[ "$current_hour" -eq "$BACKUP_HOUR" ]]; then
-        run_backup || write_sentinel "false" "null" "backup failed: see logs"
-        # Sleep 61 minutes so we don't re-trigger in the same hour
+        run_backup || write_sentinel "false" "null" "backup failed: see container logs"
+        # Sleep 61 minutes so we don't re-fire in the same hour window
         sleep 3660
     else
         sleep 60

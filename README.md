@@ -62,7 +62,7 @@ First run builds all three images. Subsequent starts are fast.
 docker compose ps
 # All three services should show status: healthy (after ~30s)
 
-curl http://localhost:8080/health
+curl http://localhost:8080/api/health
 # {"status": "ok", "version": "0.1.0"}
 
 curl http://localhost:8081/health
@@ -81,21 +81,27 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 
 ---
 
-## Connecting Claude Desktop to the MCP server
+## Using the MCP tools with Claude Code
 
-Add to your Claude Desktop `claude_desktop_config.json`:
+The repo ships a `.mcp.json` at the root that points Claude Code at the MCP server:
 
 ```json
 {
   "mcpServers": {
     "em-journal": {
+      "type": "sse",
       "url": "http://localhost:8081/sse"
     }
   }
 }
 ```
 
-The MCP tools are available once Phase 6 is complete. See `PROGRESS.md` for status.
+Claude Code picks this up automatically when you open a session from the repo directory.
+The stack must be running first (`docker compose up -d`). All seven tools become available
+in the conversation: `list_people`, `get_person`, `add_observation`, `log_one_on_one`,
+`update_allocation`, `complete_action_item`, and `whats_stale`.
+
+See `AGENTS.md` for full guidance on how to work with this codebase via an AI agent.
 
 ---
 

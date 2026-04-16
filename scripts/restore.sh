@@ -1,55 +1,74 @@
 #!/usr/bin/env bash
-# Restore EM Journal database from a Google Drive backup.
-# See docs/SPEC.md section 7.6 for the documented procedure.
+# EM Journal restore script.
+# Restores the database from a Google Drive backup.
+#
+# Usage (run from repo root):
+#   ./scripts/restore.sh                                     # lists backups, prompts
+#   ./scripts/restore.sh em-journal-20260415-030013.db.gz   # restore specific file
 
 set -euo pipefail
 
 RCLONE_REMOTE="${RCLONE_REMOTE:-gdrive}"
-BACKUP_PATH="${BACKUP_PATH:-em-journal-backups}"
+BACKUP_DEST_PATH="${BACKUP_PATH:-em-journal-backups}"
+RCLONE_CONFIG_FILE="${RCLONE_CONFIG:-./secrets/rclone.conf}"
 VOLUME_NAME="em_journal_data"
 
-log() { echo "[restore] $*"; }
-die() { echo "[restore] ERROR: $*" >&2; exit 1; }
+log() { echo "==> $*"; }
+die() { echo "ERROR: $*" >&2; exit 1; }
 
-command -v rclone >/dev/null 2>&1 || die "rclone is not installed"
-command -v docker >/dev/null 2>&1 || die "docker is not installed"
+command -v rclone >/dev/null 2>&1 || die "rclone is not installed."
+command -v docker  >/dev/null 2>&1 || die "docker is not installed."
+[[ -f "$RCLONE_CONFIG_FILE" ]] || die "rclone config not found at ${RCLONE_CONFIG_FILE}. Run 'rclone config' first and copy to secrets/rclone.conf."
 
-log "Available backups in ${RCLONE_REMOTE}:${BACKUP_PATH}/"
-rclone ls "${RCLONE_REMOTE}:${BACKUP_PATH}/" | sort -k2 | tail -20
+BACKUP_FILE="${1:-}"
 
+if [[ -z "$BACKUP_FILE" ]]; then
+    log "Available backups in ${RCLONE_REMOTE}:${BACKUP_DEST_PATH}/ (newest first):"
+    echo ""
+    rclone --config="$RCLONE_CONFIG_FILE" lsf "${RCLONE_REMOTE}:${BACKUP_DEST_PATH}/" \
+        | grep -E '^em-journal-.*\.db\.gz$' \
+        | sort -r \
+        | head -20
+    echo ""
+    read -rp "Enter filename to restore (Ctrl+C to cancel): " BACKUP_FILE
+fi
+
+[[ -n "$BACKUP_FILE" ]] || die "No backup file specified."
+
+log "Selected: ${BACKUP_FILE}"
 echo ""
-read -rp "Enter the filename to restore (e.g. em-journal-20260415-030000.db.gz): " FILENAME
+echo "  WARNING: This will REPLACE the current database."
+echo "  The running stack will be stopped first."
+echo "  Any data written after this backup was taken will be lost."
+echo ""
+read -rp "Type 'yes' to continue: " confirm
+[[ "$confirm" == "yes" ]] || { echo "Aborted."; exit 0; }
 
-[[ -n "$FILENAME" ]] || die "No filename provided"
+TMP_GZ="/tmp/${BACKUP_FILE}"
+TMP_DB="/tmp/${BACKUP_FILE%.gz}"
 
-log "Downloading $FILENAME..."
-rclone copy "${RCLONE_REMOTE}:${BACKUP_PATH}/${FILENAME}" /tmp/
-
-GZ_PATH="/tmp/${FILENAME}"
-DB_PATH="${GZ_PATH%.gz}"
-
-[[ -f "$GZ_PATH" ]] || die "Download failed: $GZ_PATH not found"
+log "Downloading ${BACKUP_FILE}..."
+rclone --config="$RCLONE_CONFIG_FILE" copy \
+    "${RCLONE_REMOTE}:${BACKUP_DEST_PATH}/${BACKUP_FILE}" /tmp/
+[[ -f "$TMP_GZ" ]] || die "Download failed: file not found at ${TMP_GZ}"
 
 log "Decompressing..."
-gunzip -c "$GZ_PATH" > "$DB_PATH"
-rm -f "$GZ_PATH"
+gunzip -f "$TMP_GZ"
+[[ -f "$TMP_DB" ]] || die "Decompression failed."
 
-echo ""
-echo "WARNING: This will replace the current database in volume '${VOLUME_NAME}'."
-read -rp "Are you sure? Type YES to continue: " CONFIRM
+log "Stopping docker compose stack..."
+docker compose down
 
-[[ "$CONFIRM" == "YES" ]] || { log "Aborted."; exit 0; }
+docker volume inspect "$VOLUME_NAME" >/dev/null 2>&1 \
+    || docker volume create "$VOLUME_NAME"
 
-log "Stopping running containers..."
-docker compose down 2>/dev/null || true
-
-log "Copying database into volume..."
+log "Copying database into volume ${VOLUME_NAME}..."
 docker run --rm \
     -v "${VOLUME_NAME}:/data" \
     -v "/tmp:/tmp" \
     alpine \
-    cp "/tmp/$(basename "$DB_PATH")" /data/em.db
+    cp "/tmp/$(basename "$TMP_DB")" /data/em.db
 
-rm -f "$DB_PATH"
+rm -f "$TMP_DB"
 
-log "Restore complete. Run 'docker compose up -d' to start."
+log "Restore complete. Start the stack with: docker compose up -d"

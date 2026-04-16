@@ -107,12 +107,12 @@ See `AGENTS.md` section "Commit workflow" for the full convention.
 
 ## Phase 7: Backup system
 
-- [ ] `backup/` Dockerfile: Alpine with `sqlite3`, `rclone`, and the backup script
-- [ ] `scripts/backup.sh`: online backup, gzip, rclone upload, retention policy
-- [ ] Sentinel file written to `/backup-status/last.json` on success and failure
-- [ ] App reads sentinel and surfaces it in the `/health` endpoint and UI header
-- [ ] `scripts/restore.sh`: documented restore procedure (see SPEC.md section 7.6)
-- [ ] rclone auth setup documented in `README.md`
+- [x] `backup/` Dockerfile: Alpine with `sqlite3`, `rclone`, and the backup script
+- [x] `scripts/backup.sh`: online backup, gzip, rclone upload, retention policy
+- [x] Sentinel file written to `/backup-status/last.json` on success and failure
+- [x] App reads sentinel and surfaces it in the `/health` endpoint and UI header
+- [x] `scripts/restore.sh`: documented restore procedure (see SPEC.md section 7.6)
+- [x] rclone auth setup documented in `README.md`
 
 **Verify**: Trigger `backup.sh` manually inside the backup container. Confirm file appears in Google Drive. Confirm `last.json` sentinel is written. Confirm the UI header shows the correct timestamp. Simulate a stale sentinel and confirm `OVERDUE` indicator appears.
 
