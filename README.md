@@ -6,8 +6,8 @@
 <p align="center"><strong>Keep the rhythm.</strong></p>
 
 <p align="center">
-  <a href="https://github.com/YOUR_USERNAME/cadencia/actions/workflows/ci.yml">
-    <img src="https://github.com/YOUR_USERNAME/cadencia/actions/workflows/ci.yml/badge.svg" alt="CI" />
+  <a href="https://github.com/apojomovsky/cadencia/actions/workflows/ci.yml">
+    <img src="https://github.com/apojomovsky/cadencia/actions/workflows/ci.yml/badge.svg" alt="CI" />
   </a>
   <img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License: Apache 2.0" />
   <img src="https://img.shields.io/badge/python-3.12-3776AB.svg?logo=python&logoColor=white" alt="Python 3.12" />
@@ -51,7 +51,7 @@ full-team dashboard and per-person detail view for when you want to browse rathe
 ### 1. Clone and configure
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/cadencia.git
+git clone https://github.com/apojomovsky/cadencia.git
 cd cadencia
 cp .env.example .env
 ```
