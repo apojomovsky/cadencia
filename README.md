@@ -1,66 +1,93 @@
-# EM Journal
+<p align="center">
+  <img src="assets/logo-mark.svg" width="80" alt="Cadencia" />
+</p>
 
-A self-hosted people management journal for engineering managers. Stores structured notes
-about direct reports and answers natural-language questions via an MCP server. Built for
-single-user local use.
+<h1 align="center">Cadencia</h1>
+<p align="center"><strong>Keep the rhythm.</strong></p>
 
-See `docs/SPEC.md` for the full design, and `PROGRESS.md` for implementation status.
+<p align="center">
+  <a href="https://github.com/YOUR_USERNAME/cadencia/actions/workflows/ci.yml">
+    <img src="https://github.com/YOUR_USERNAME/cadencia/actions/workflows/ci.yml/badge.svg" alt="CI" />
+  </a>
+  <img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License: Apache 2.0" />
+  <img src="https://img.shields.io/badge/python-3.12-3776AB.svg?logo=python&logoColor=white" alt="Python 3.12" />
+  <img src="https://img.shields.io/badge/docker-compose-2496ED.svg?logo=docker&logoColor=white" alt="Docker Compose" />
+  <img src="https://img.shields.io/badge/FastAPI-009688.svg?logo=fastapi&logoColor=white" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/MCP-compatible-8B5CF6.svg" alt="MCP compatible" />
+</p>
+
+<br />
+
+A self-hosted people management journal for engineering managers. Cadencia tracks your direct
+reports — their allocations, 1:1 history, observations, and open action items — and surfaces
+stale data before you have to think to look for it.
+
+It runs entirely on your machine via Docker Compose. Your data never leaves. An MCP server lets
+you query and capture notes directly from a Claude conversation, and a web UI gives you a
+full-team dashboard and per-person detail view for when you want to browse rather than ask.
+
+---
+
+## Features
+
+- **Dashboard** — stale allocations, overdue 1:1s, and aging action items surfaced automatically on every load
+- **Per-person view** — current allocation, open action items, recent observations, 1:1 log, and allocation history in one page
+- **MCP server** — seven tools callable from Claude Code or any MCP-compatible client
+- **Local-first** — SQLite on a named Docker volume; no external database, no cloud account required to run
+- **Daily backups** — automated SQLite online backup, gzipped and uploaded to Google Drive via rclone
+- **ADHD-aware design** — the system brings stale data forward; nothing requires you to remember to check
 
 ---
 
 ## Prerequisites
 
 - Docker and Docker Compose v2
-- rclone (for Google Drive backups)
+- rclone (for Google Drive backups; optional for local-only use)
 
 ---
 
-## First-time setup
+## Quick start
 
-### 1. Copy the environment file
+### 1. Clone and configure
 
 ```bash
+git clone https://github.com/YOUR_USERNAME/cadencia.git
+cd cadencia
 cp .env.example .env
 ```
 
-Edit `.env` if you want to change defaults (backup schedule, staleness thresholds, etc.).
+Edit `.env` to adjust defaults (backup schedule, staleness thresholds, etc.).
 
 ### 2. Set up rclone for Google Drive backups
 
 ```bash
-# Install rclone if not already installed
-# https://rclone.org/install/
-
-# Create the secrets directory (gitignored)
+# Install rclone: https://rclone.org/install/
 mkdir -p secrets
 
-# Configure a Google Drive remote named "gdrive"
+# Configure a remote named "gdrive"
 rclone config
-# Follow the interactive prompts to add a new remote:
+# Follow the prompts:
 #   Name: gdrive
 #   Type: drive (Google Drive)
 #   Complete the OAuth flow in your browser
 
-# Copy the resulting config to the secrets directory
 cp ~/.config/rclone/rclone.conf secrets/rclone.conf
 ```
 
-The backup container mounts `./secrets/` at runtime. If `secrets/rclone.conf` is missing,
-the backup script runs but skips the upload step (safe for development).
+If `secrets/rclone.conf` is absent, the backup container runs but skips the upload step. Safe for local development.
 
-### 3. Start the stack
+### 3. Start
 
 ```bash
 docker compose up -d
 ```
 
-First run builds all three images. Subsequent starts are fast.
+First run builds all three images. Open `http://localhost:8080` once the containers are healthy (about 30 seconds).
 
 ### 4. Verify
 
 ```bash
 docker compose ps
-# All three services should show status: healthy (after ~30s)
 
 curl http://localhost:8080/api/health
 # {"status": "ok", "version": "0.1.0"}
@@ -73,42 +100,58 @@ curl http://localhost:8081/health
 
 ## Development
 
-For hot reload (source code changes reflected without rebuilding):
+Hot reload with source bind mounts:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 ```
 
----
+Run the test suite:
 
-## Using the MCP tools with Claude Code
-
-The repo ships a `.mcp.json` at the root that points Claude Code at the MCP server:
-
-```json
-{
-  "mcpServers": {
-    "em-journal": {
-      "type": "sse",
-      "url": "http://localhost:8081/sse"
-    }
-  }
-}
+```bash
+docker compose exec app python -m pytest /app/tests/ -v
 ```
 
-Claude Code picks this up automatically when you open a session from the repo directory.
-The stack must be running first (`docker compose up -d`). All seven tools become available
-in the conversation: `list_people`, `get_person`, `add_observation`, `log_one_on_one`,
-`update_allocation`, `complete_action_item`, and `whats_stale`.
+---
 
-See `AGENTS.md` for full guidance on how to work with this codebase via an AI agent.
+## Using with Claude Code
+
+The repo ships `.mcp.json` at the root. Claude Code picks it up automatically when you open a
+session from this directory. Start the stack first, then open a Claude conversation:
+
+```bash
+docker compose up -d
+claude  # or open the project in your IDE with Claude Code
+```
+
+The seven MCP tools become available immediately:
+
+| Tool | What it does |
+|---|---|
+| `list_people` | List all direct reports (filter by status) |
+| `get_person` | Full profile for one person by name or ID |
+| `add_observation` | Append a tagged observation |
+| `log_one_on_one` | Record a 1:1 with notes and action items |
+| `update_allocation` | Set or update a client/project allocation |
+| `complete_action_item` | Mark an action item done with optional notes |
+| `whats_stale` | Team-wide staleness report |
+
+See `AGENTS.md` for guidance on working with this codebase via an AI agent.
 
 ---
 
 ## Restoring from a backup
 
-See `scripts/restore.sh` for the step-by-step restore procedure, or follow the manual
-steps in `docs/SPEC.md` section 7.6.
+```bash
+# Interactive: lists available backups and prompts for selection
+./scripts/restore.sh
+
+# Direct: restore a specific file
+./scripts/restore.sh cadencia-20260415-030013.db.gz
+```
+
+The restore script stops the running stack, replaces the database volume, and exits cleanly.
+Restart with `docker compose up -d`.
 
 ---
 
@@ -118,9 +161,16 @@ steps in `docs/SPEC.md` section 7.6.
 app/          FastAPI web app and shared service layer
 mcp/          MCP server (wraps the service layer)
 backup/       Backup container (SQLite online backup + rclone)
+assets/       Logo and brand assets
 db/init/      SQL migration files
-scripts/      Utility scripts (restore, bootstrap)
+scripts/      Utility scripts (restore)
 docs/SPEC.md  Full implementation spec
-AGENTS.md     Guidance for AI agents implementing this codebase
+AGENTS.md     Guidance for AI agents working on this codebase
 PROGRESS.md   Implementation checklist
 ```
+
+---
+
+## License
+
+Apache 2.0. See [LICENSE](LICENSE).
