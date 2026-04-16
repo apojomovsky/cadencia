@@ -16,7 +16,7 @@
 <br />
 
 A self-hosted people management journal for engineering managers. Cadencia tracks your direct
-reports — their allocations, 1:1 history, observations, and open action items — and surfaces
+reports: their allocations, 1:1 history, observations, and open action items. It surfaces
 stale data before you have to think to look for it.
 
 It runs entirely on your machine via Docker Compose. Your data never leaves. An MCP server lets
@@ -27,12 +27,12 @@ full-team dashboard and per-person detail view for when you want to browse rathe
 
 ## Features
 
-- **Dashboard** — stale allocations, overdue 1:1s, and aging action items surfaced automatically on every load
-- **Per-person view** — current allocation, open action items, recent observations, 1:1 log, and allocation history in one page
-- **MCP server** — seven tools callable from Claude Code or any MCP-compatible client
-- **Local-first** — SQLite on a named Docker volume; no external database, no cloud account required to run
-- **Daily backups** — automated SQLite online backup, gzipped and uploaded to Google Drive via rclone
-- **ADHD-aware design** — the system brings stale data forward; nothing requires you to remember to check
+- **Dashboard:** stale allocations, overdue 1:1s, and aging action items surfaced automatically on every load
+- **Per-person view:** current allocation, open action items, recent observations, 1:1 log, and allocation history in one page
+- **MCP server:** seven tools callable from Claude Code or any MCP-compatible client
+- **Local-first:** SQLite on a named Docker volume; no external database, no cloud account required to run
+- **Daily backups:** automated SQLite online backup, gzipped and uploaded to Google Drive via rclone
+- **ADHD-aware design:** the system brings stale data forward; nothing requires you to remember to check
 
 ---
 

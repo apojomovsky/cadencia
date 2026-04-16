@@ -142,7 +142,7 @@ Acceptance criteria status:
 Items move here after their commit lands, with the commit SHA for reference.
 
 <!-- Example:
-- [x] docs: add project spec, agent guidance, and gitignore — `be0ef6b`
+- [x] docs: add project spec, agent guidance, and gitignore (`be0ef6b`)
 -->
 
-- [x] docs: add project spec, agent guidance, and gitignore — `be0ef6b`
+- [x] docs: add project spec, agent guidance, and gitignore (`be0ef6b`)
