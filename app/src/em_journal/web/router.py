@@ -11,10 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from em_journal.api.deps import get_backup_status, get_db, get_owner_id
 from em_journal.config import settings
-from em_journal.services.action_items import complete_action_item, get_open_action_items
+from em_journal.services.action_items import complete_action_item
 from em_journal.services.exceptions import NotFoundError
 from em_journal.services.people import list_people
-from em_journal.services.queries import get_person_overview
+from em_journal.services.queries import get_person_overview, whats_stale
 
 router = APIRouter(include_in_schema=False)
 
@@ -87,6 +87,30 @@ def _alloc_context(last_confirmed: date | None, threshold_days: int) -> dict[str
 
 
 @router.get("/", response_class=HTMLResponse)
+async def dashboard(
+    request: Request,
+    conn: AsyncConnection = Depends(get_db),
+    owner_id: str = Depends(get_owner_id),
+) -> HTMLResponse:
+    report = await whats_stale(
+        conn,
+        owner_id=owner_id,
+        allocation_threshold_days=settings.allocation_stale_days,
+        one_on_one_threshold_days=settings.one_on_one_stale_days,
+    )
+    return templates.TemplateResponse(
+        request,
+        "dashboard.html",
+        {
+            "stale_allocs": report.stale_allocations,
+            "overdue_oos": report.overdue_one_on_ones,
+            "overdue_ais": report.overdue_action_items,
+            **_backup_context(),
+        },
+    )
+
+
+@router.get("/people", response_class=HTMLResponse)
 async def people_list(
     request: Request,
     conn: AsyncConnection = Depends(get_db),

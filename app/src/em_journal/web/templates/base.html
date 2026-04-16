@@ -9,7 +9,12 @@
 </head>
 <body>
   <header class="site-header">
-    <h1><a href="/" style="color: inherit; text-decoration: none;">EM Journal</a></h1>
+    <h1>
+      <a href="/" style="color: inherit; text-decoration: none;">EM Journal</a>
+      <span style="font-weight: 400; font-size: 14px; margin-left: 16px;">
+        <a href="/people">People</a>
+      </span>
+    </h1>
     <div class="backup-status {% if backup_overdue %}overdue{% endif %}">
       {% if backup_overdue %}
         backup: OVERDUE
