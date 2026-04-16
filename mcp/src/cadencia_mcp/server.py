@@ -29,6 +29,7 @@ from cadencia.services.one_on_ones import log_one_on_one as svc_log_oo
 from cadencia.services.queries import get_person_overview
 from cadencia.services.queries import whats_stale as svc_whats_stale
 from cadencia.services.stakeholders import create_stakeholder as svc_create_stakeholder
+from cadencia.services.context import list_context_docs, read_context_doc
 from cadencia.services.stakeholders import list_stakeholders as svc_list_stakeholders
 
 logging.basicConfig(level=settings.log_level)
@@ -456,6 +457,47 @@ async def add_stakeholder_feedback(
         "person_name": detail.name,
         "received_date": str(fb.received_date),
         "stakeholder_id": fb.stakeholder_id,
+    }
+
+
+@mcp.tool()
+async def list_context() -> list[dict[str, Any]]:
+    """List all context documents in the private context directory.
+
+    Returns filename, document type, key metadata fields, and a list of missing required
+    fields for each file. Files with missing_fields are incomplete and may lack key context.
+    Call read_context to retrieve the full content of any document.
+    """
+    docs = list_context_docs(settings.context_dir)
+    return [
+        {
+            "filename": d.filename,
+            "valid": d.valid,
+            "metadata": d.metadata,
+            "missing_fields": d.missing_fields,
+        }
+        for d in docs
+    ]
+
+
+@mcp.tool()
+async def read_context(filename: str) -> dict[str, Any]:
+    """Read the full content of a context document.
+
+    filename: exact filename as returned by list_context (e.g. "q1-retro-transcript.md").
+    Returns the parsed frontmatter metadata, a list of any missing required fields, and the
+    document body. Use list_context first to discover available files.
+    """
+    try:
+        doc = read_context_doc(settings.context_dir, filename)
+    except FileNotFoundError as e:
+        return _err("NotFound", str(e))
+    return {
+        "filename": doc.filename,
+        "valid": doc.valid,
+        "metadata": doc.metadata,
+        "missing_fields": doc.missing_fields,
+        "content": doc.content,
     }
 
 

@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     allocation_stale_days: int = 45
     one_on_one_stale_days: int = 14
     stakeholder_feedback_stale_days: int = 60
+    context_dir: str = "/data/context"
     log_level: str = "INFO"
 
 

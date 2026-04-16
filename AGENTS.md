@@ -189,6 +189,45 @@ are failures. Specifically:
 
 ---
 
+## Private context directory
+
+The user stores company-specific context files at `DATA_DIR/context/` on the host, which is
+mounted into the containers at `/data/context/`. These files are gitignored and never leave
+the machine.
+
+Use the `list_context` MCP tool to discover what files are available before answering any
+question that might be informed by them (performance frameworks, email dumps, meeting
+transcripts, spreadsheets, process docs). Use `read_context` to retrieve a specific file.
+
+### Frontmatter requirement
+
+Every context file must begin with a YAML frontmatter block. Required fields vary by type:
+
+| Type | Required fields |
+|---|---|
+| `transcript` | type, date, title, participants, topic |
+| `email` | type, date, title, participants, subject |
+| `process` | type, date, title, applies_to |
+| `spreadsheet` | type, date, title, description |
+| `reference` | type, date, title, source |
+
+Example frontmatter for a transcript:
+
+```
+---
+type: transcript
+date: 2026-04-10
+title: Q1 retrospective with Alice
+participants: Alice, Bob, manager
+topic: Q1 performance and goals
+---
+```
+
+`list_context` reports `missing_fields` for any file that is incomplete. Flag incomplete
+files to the user before attempting to draw conclusions from them.
+
+---
+
 ## On the MCP tools specifically
 
 The MCP surface is a public API in the strong sense: any MCP-compatible client can call it,
