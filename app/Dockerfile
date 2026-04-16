@@ -11,13 +11,13 @@ RUN uv pip install --system --no-cache ".[dev]"
 
 # Install source properly now that deps are cached
 COPY src/ ./src/
-RUN uv pip install --system --no-cache --no-deps .
+RUN uv pip install --system --no-cache --no-deps --reinstall .
 
 # Stage 2: runtime image
 FROM python:3.12.3-slim-bookworm AS runtime
 WORKDIR /app
 
-RUN useradd --create-home --shell /bin/bash --uid 1001 app
+RUN useradd --create-home --shell /bin/bash --uid 1000 app
 
 # Copy installed packages and runtime binaries from builder
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages

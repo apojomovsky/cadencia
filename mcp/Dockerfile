@@ -18,13 +18,13 @@ RUN mkdir -p src/cadencia_mcp && touch src/cadencia_mcp/__init__.py
 RUN uv pip install --system --no-cache .
 
 COPY mcp/src/ ./src/
-RUN uv pip install --system --no-cache --no-deps .
+RUN uv pip install --system --no-cache --no-deps --reinstall .
 
 # Stage 2: runtime image
 FROM python:3.12.3-slim-bookworm AS runtime
 WORKDIR /app
 
-RUN useradd --create-home --shell /bin/bash --uid 1001 app
+RUN useradd --create-home --shell /bin/bash --uid 1000 app
 
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin/uvicorn /usr/local/bin/uvicorn
