@@ -6,14 +6,11 @@
 <p align="center"><strong>Keep the rhythm.</strong></p>
 
 <p align="center">
-  <a href="https://github.com/apojomovsky/cadencia/actions/workflows/ci.yml" style="text-decoration: none;">
-    <img src="https://github.com/apojomovsky/cadencia/actions/workflows/ci.yml/badge.svg" alt="CI" />
-  </a>
+  <img src="https://github.com/apojomovsky/cadencia/actions/workflows/ci.yml/badge.svg" alt="CI" />
   <img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License: Apache 2.0" />
   <img src="https://img.shields.io/badge/python-3.12-3776AB.svg?logo=python&logoColor=white" alt="Python 3.12" />
   <img src="https://img.shields.io/badge/docker-compose-2496ED.svg?logo=docker&logoColor=white" alt="Docker Compose" />
   <img src="https://img.shields.io/badge/FastAPI-009688.svg?logo=fastapi&logoColor=white" alt="FastAPI" />
-  <img src="https://img.shields.io/badge/MCP-compatible-8B5CF6.svg" alt="MCP compatible" />
 </p>
 
 <br />
@@ -79,7 +76,7 @@ If `secrets/rclone.conf` is absent, the backup container runs but skips the uplo
 ### 3. Start
 
 ```bash
-docker compose up -d
+make up
 ```
 
 First run builds all three images. Open `http://localhost:8080` once the containers are healthy (about 30 seconds).
@@ -100,17 +97,18 @@ curl http://localhost:8081/health
 
 ## Development
 
-Hot reload with source bind mounts:
-
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+make setup-dev   # install dev dependencies and git pre-commit hook (run once)
+make dev         # start with hot reload (dev overlay)
+make test        # run the test suite inside the app container
+make lint        # ruff check
+make lint-fix    # ruff check --fix
+make logs        # follow container logs
+make shell       # open a shell in the app container
+make down        # stop the stack
 ```
 
-Run the test suite:
-
-```bash
-docker compose exec app python -m pytest /app/tests/ -v
-```
+Run `make` with no arguments to see all available commands.
 
 ---
 
@@ -120,7 +118,7 @@ The repo ships `.mcp.json` at the root. Claude Code picks it up automatically wh
 session from this directory. Start the stack first, then open a Claude conversation:
 
 ```bash
-docker compose up -d
+make up
 claude  # or open the project in your IDE with Claude Code
 ```
 
@@ -151,7 +149,7 @@ See `AGENTS.md` for guidance on working with this codebase via an AI agent.
 ```
 
 The restore script stops the running stack, replaces the database volume, and exits cleanly.
-Restart with `docker compose up -d`.
+Restart with `make up`.
 
 ---
 
