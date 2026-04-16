@@ -10,6 +10,24 @@
     {% if overview.role %}{{ overview.role }}{% endif %}
     {% if overview.seniority %}&nbsp;&middot;&nbsp;{{ overview.seniority }}{% endif %}
     {% if overview.start_date %}&nbsp;&middot;&nbsp;Since {{ overview.start_date }}{% endif %}
+    &nbsp;&middot;&nbsp; 1:1
+    <span id="cadence-widget">
+      every
+      {% if overview.one_on_one_cadence_days %}
+        <strong>{{ overview.one_on_one_cadence_days }}d</strong>
+      {% else %}
+        <strong>{{ global_oo_cadence }}d</strong> <span style="color:var(--muted);font-size:12px;">(global)</span>
+      {% endif %}
+      <button class="edit-btn"
+        hx-get="/people/{{ overview.person_id }}/cadence-edit-form"
+        hx-target="#cadence-widget"
+        hx-swap="outerHTML">edit</button>
+    </span>
+    {% if overview.recurrence_weekday is not none %}
+    <span style="font-size:12px; color:var(--muted); margin-left:4px;">
+      ({% set days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"] %}{{ days[overview.recurrence_weekday] }}{% if overview.recurrence_week_of_month %}, {% if overview.recurrence_week_of_month == -1 %}last{% elif overview.recurrence_week_of_month == 1 %}1st{% elif overview.recurrence_week_of_month == 2 %}2nd{% elif overview.recurrence_week_of_month == 3 %}3rd{% else %}4th{% endif %} of month{% endif %})
+    </span>
+    {% endif %}
   </span>
 </div>
 
@@ -46,17 +64,28 @@
   <div class="section-body">
     {% if overview.next_one_on_one %}
     <p style="margin-bottom: 10px;">
-      Next 1:1: <strong>{{ overview.next_one_on_one.scheduled_date }}</strong>
-      {% if next_oo_days is not none %}
+      Scheduled: <strong>{{ overview.next_one_on_one.scheduled_date }}</strong>
+      {% if next_oo_days is not none and next_oo_days >= 0 %}
         {% if next_oo_days == 0 %}(today)
         {% elif next_oo_days == 1 %}(tomorrow)
         {% else %}(in {{ next_oo_days }} days)
         {% endif %}
       {% endif %}
     </p>
+    {% elif overview.next_expected_date and next_oo_days is not none and next_oo_days >= 0 %}
+    <p style="margin-bottom: 10px; color: var(--muted); font-size: 13px;">
+      Expected: <strong style="color: var(--fg);">{{ overview.next_expected_date }}</strong>
+      {% if next_oo_days == 0 %}(today)
+      {% elif next_oo_days == 1 %}(tomorrow)
+      {% else %}(in {{ next_oo_days }} days)
+      {% endif %}
+    </p>
     {% elif last_oo_overdue %}
-    <p style="margin-bottom: 10px;" class="badge danger" style="display: inline-block;">
-      1:1 OVERDUE ({{ last_oo_days_ago }}d since last)
+    <p style="margin-bottom: 10px;">
+      <span class="badge danger">1:1 OVERDUE ({{ last_oo_days_ago }}d since last)</span>
+      {% if overview.next_expected_date %}
+      <span style="font-size: 13px; color: var(--muted); margin-left: 8px;">next expected: {{ overview.next_expected_date }}</span>
+      {% endif %}
     </p>
     {% else %}
     <p style="margin-bottom: 10px; color: var(--muted); font-size: 14px;">No upcoming 1:1 scheduled.</p>
@@ -147,6 +176,16 @@
     <span class="chevron">&#9656;</span>
   </div>
   <div id="full-log-body" class="section-body" style="display: none;"></div>
+</div>
+
+{# Section 6: STAKEHOLDER FEEDBACK #}
+<div class="section">
+  <div class="section-header">Stakeholder Feedback</div>
+  <div class="section-body">
+    <div id="feedback-section">
+      {% include "fragments/feedback_section.html" %}
+    </div>
+  </div>
 </div>
 
 {% endblock %}

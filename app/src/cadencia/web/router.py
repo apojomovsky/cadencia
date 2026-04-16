@@ -11,10 +11,15 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from cadencia.api.deps import get_backup_status, get_db, get_owner_id
 from cadencia.config import settings
+from cadencia.models.feedback import AddFeedbackInput
+from cadencia.models.stakeholders import CreateStakeholderInput
 from cadencia.services.action_items import complete_action_item
 from cadencia.services.exceptions import NotFoundError
-from cadencia.services.people import list_people
+from cadencia.services.feedback import add_feedback, list_feedback_for_person
+from cadencia.services.people import get_person, list_people, set_one_on_one_cadence
 from cadencia.services.queries import get_person_overview, whats_stale
+from cadencia.services.stakeholders import create_stakeholder
+from cadencia.services.stakeholders import list_stakeholders as list_stakeholders_svc
 
 router = APIRouter(include_in_schema=False)
 
@@ -105,6 +110,7 @@ async def dashboard(
             "stale_allocs": report.stale_allocations,
             "overdue_oos": report.overdue_one_on_ones,
             "overdue_ais": report.overdue_action_items,
+            "stale_feedback": report.stale_feedback,
             **_backup_context(),
         },
     )
@@ -123,7 +129,10 @@ async def people_list(
 
     rows = []
     for p in people:
-        oo_ctx = _one_on_one_context(p.last_one_on_one_date, p.next_one_on_one_date, threshold_oo)
+        effective_oo = p.one_on_one_cadence_days or threshold_oo
+        # Use explicit scheduled date if present, fall back to expected
+        next_date = p.next_one_on_one_date or p.next_expected_date
+        oo_ctx = _one_on_one_context(p.last_one_on_one_date, next_date, effective_oo)
         if p.current_allocation_type is not None:
             alloc_ctx = _alloc_context(p.current_allocation_confirmed_date, threshold_alloc)
         else:
@@ -163,16 +172,17 @@ async def person_detail(
         raise HTTPException(status_code=404, detail="Person not found")
 
     today = date.today()
-    threshold_oo = settings.one_on_one_stale_days
     threshold_alloc = settings.allocation_stale_days
+    # Per-person cadence with global fallback
+    effective_oo_threshold = overview.one_on_one_cadence_days or settings.one_on_one_stale_days
 
     # Next 1:1 days until
     next_oo_days = None
-    if overview.next_one_on_one:
-        d = overview.next_one_on_one.scheduled_date
+    if overview.next_expected_date:
+        d = overview.next_expected_date
         if isinstance(d, str):
-            d = date.fromisoformat(d)
-        next_oo_days = max((d - today).days, 0)
+            d = date.fromisoformat(str(d))
+        next_oo_days = (d - today).days  # can be negative = overdue
 
     # Last 1:1 overdue check
     last_oo_days_ago = None
@@ -182,7 +192,7 @@ async def person_detail(
         if isinstance(d, str):
             d = date.fromisoformat(d)
         last_oo_days_ago = (today - d).days
-        last_oo_overdue = last_oo_days_ago > threshold_oo
+        last_oo_overdue = last_oo_days_ago > effective_oo_threshold
 
     # Allocation staleness
     alloc_stale = False
@@ -205,6 +215,9 @@ async def person_detail(
             is_overdue = due < today
         enriched_items.append({"item": item, "is_overdue": is_overdue})
 
+    recent_feedback = await list_feedback_for_person(conn, person_id, owner_id, limit=5)
+    all_stakeholders = await list_stakeholders_svc(conn, owner_id)
+
     return templates.TemplateResponse(
         request,
         "person_detail.html",
@@ -216,6 +229,11 @@ async def person_detail(
             "last_oo_overdue": last_oo_overdue,
             "alloc_stale": alloc_stale,
             "alloc_days_since": alloc_days_since,
+            "global_oo_cadence": settings.one_on_one_stale_days,
+            "recent_feedback": recent_feedback,
+            "all_stakeholders": all_stakeholders,
+            "recurrence_weekday": overview.recurrence_weekday,
+            "recurrence_week_of_month": overview.recurrence_week_of_month,
             **_backup_context(),
         },
     )
@@ -287,4 +305,134 @@ async def full_log_fragment(
         request,
         "fragments/full_log.html",
         {"one_on_ones": one_on_ones},
+    )
+
+
+@router.get("/people/{person_id}/cadence-display", response_class=HTMLResponse)
+async def cadence_display_fragment(
+    request: Request,
+    person_id: str,
+    conn: AsyncConnection = Depends(get_db),
+    owner_id: str = Depends(get_owner_id),
+) -> HTMLResponse:
+    try:
+        person = await get_person(conn, person_id, owner_id)
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Person not found")
+    return templates.TemplateResponse(
+        request,
+        "fragments/cadence_display.html",
+        {
+            "person_id": person_id,
+            "cadence_days": person.one_on_one_cadence_days,
+            "global_default": settings.one_on_one_stale_days,
+        },
+    )
+
+
+@router.get("/people/{person_id}/cadence-edit-form", response_class=HTMLResponse)
+async def cadence_edit_form_fragment(
+    request: Request,
+    person_id: str,
+    conn: AsyncConnection = Depends(get_db),
+    owner_id: str = Depends(get_owner_id),
+) -> HTMLResponse:
+    try:
+        person = await get_person(conn, person_id, owner_id)
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Person not found")
+    return templates.TemplateResponse(
+        request,
+        "fragments/cadence_edit_form.html",
+        {
+            "person_id": person_id,
+            "cadence_days": person.one_on_one_cadence_days,
+            "global_default": settings.one_on_one_stale_days,
+        },
+    )
+
+
+@router.post("/people/{person_id}/add-feedback", response_class=HTMLResponse)
+async def add_feedback_htmx(
+    request: Request,
+    person_id: str,
+    conn: AsyncConnection = Depends(get_db),
+    owner_id: str = Depends(get_owner_id),
+) -> HTMLResponse:
+    form = await request.form()
+    content = str(form.get("content", "")).strip()
+    stakeholder_id_raw = form.get("stakeholder_id", "")
+    stakeholder_id = str(stakeholder_id_raw) if stakeholder_id_raw else None
+    if not content:
+        raise HTTPException(status_code=400, detail="Content required")
+    data = AddFeedbackInput(
+        person_id=person_id,
+        stakeholder_id=stakeholder_id,
+        content=content,
+    )
+    await add_feedback(conn, data, owner_id)
+    recent = await list_feedback_for_person(conn, person_id, owner_id, limit=5)
+    all_stakeholders = await list_stakeholders_svc(conn, owner_id)
+    return templates.TemplateResponse(
+        request,
+        "fragments/feedback_section.html",
+        {"person_id": person_id, "recent_feedback": recent, "all_stakeholders": all_stakeholders},
+    )
+
+
+@router.get("/stakeholders", response_class=HTMLResponse)
+async def stakeholders_list(
+    request: Request,
+    conn: AsyncConnection = Depends(get_db),
+    owner_id: str = Depends(get_owner_id),
+) -> HTMLResponse:
+    stakeholders = await list_stakeholders_svc(conn, owner_id)
+    return templates.TemplateResponse(
+        request,
+        "stakeholders.html",
+        {"stakeholders": stakeholders, **_backup_context()},
+    )
+
+
+@router.post("/stakeholders", response_class=HTMLResponse)
+async def stakeholders_create(
+    request: Request,
+    conn: AsyncConnection = Depends(get_db),
+    owner_id: str = Depends(get_owner_id),
+) -> HTMLResponse:
+    form = await request.form()
+    data = CreateStakeholderInput(
+        name=str(form.get("name", "")),
+        type=str(form.get("type", "other")),  # type: ignore[arg-type]
+        organization=str(form.get("organization", "")) or None,
+        email=str(form.get("email", "")) or None,
+        notes=str(form.get("notes", "")) or None,
+    )
+    await create_stakeholder(conn, data, owner_id)
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse("/stakeholders", status_code=303)
+
+
+@router.post("/people/{person_id}/set-cadence", response_class=HTMLResponse)
+async def set_cadence_htmx(
+    request: Request,
+    person_id: str,
+    conn: AsyncConnection = Depends(get_db),
+    owner_id: str = Depends(get_owner_id),
+) -> HTMLResponse:
+    form = await request.form()
+    raw = form.get("cadence_days", "")
+    cadence_days = int(raw) if raw else None
+    try:
+        updated = await set_one_on_one_cadence(conn, person_id, cadence_days, owner_id)
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Person not found")
+    return templates.TemplateResponse(
+        request,
+        "fragments/cadence_display.html",
+        {
+            "person_id": person_id,
+            "cadence_days": updated.one_on_one_cadence_days,
+            "global_default": settings.one_on_one_stale_days,
+        },
     )

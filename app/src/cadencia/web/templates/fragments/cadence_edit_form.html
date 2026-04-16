@@ -1,0 +1,18 @@
+<span id="cadence-widget">
+  <form hx-post="/people/{{ person_id }}/set-cadence"
+        hx-target="#cadence-widget"
+        hx-swap="outerHTML"
+        style="display:inline-flex;align-items:center;gap:4px;">
+    every
+    <input type="number" name="cadence_days"
+           value="{{ cadence_days or '' }}"
+           min="1" max="365"
+           placeholder="{{ global_default }}"
+           style="width:54px;">d
+    <button type="submit">save</button>
+    <button type="button"
+      hx-get="/people/{{ person_id }}/cadence-display"
+      hx-target="#cadence-widget"
+      hx-swap="outerHTML">cancel</button>
+  </form>
+</span>

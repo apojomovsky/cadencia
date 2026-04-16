@@ -5,12 +5,14 @@ from datetime import UTC, date, datetime, timedelta
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from cadencia.config import settings
 from cadencia.models.queries import (
     OneOnOnePrep,
     OverdueActionItem,
     OverdueOneOnOne,
     PersonOverview,
     StaleAllocation,
+    StaleFeedback,
     StalenessReport,
 )
 from cadencia.services.action_items import get_open_action_items
@@ -18,6 +20,7 @@ from cadencia.services.allocations import get_current_allocation
 from cadencia.services.observations import list_observations
 from cadencia.services.one_on_ones import _row_to_one_on_one, get_last_one_on_one
 from cadencia.services.people import get_person
+from cadencia.services.scheduling import next_expected_one_on_one
 
 
 async def whats_stale(
@@ -28,7 +31,6 @@ async def whats_stale(
 ) -> StalenessReport:
     today = date.today()
     alloc_cutoff = (today - timedelta(days=allocation_threshold_days)).isoformat()
-    oo_cutoff = (today - timedelta(days=one_on_one_threshold_days)).isoformat()
 
     # Stale allocations
     result = await conn.execute(
@@ -58,20 +60,23 @@ async def whats_stale(
             )
         )
 
-    # Overdue 1:1s
+    # Overdue 1:1s: each person's threshold = COALESCE(their cadence, global default)
     result = await conn.execute(
         text(
-            "SELECT p.id, p.name,"
+            "SELECT p.id, p.name, p.one_on_one_cadence_days,"
             "  MAX(CASE WHEN o.completed = 1 THEN o.scheduled_date END) AS last_oo,"
             "  MIN(CASE WHEN o.completed = 0 THEN o.scheduled_date END) AS next_oo"
             " FROM people p"
             " LEFT JOIN one_on_ones o ON o.person_id = p.id AND o.owner_id = :owner"
             " WHERE p.owner_id = :owner AND p.status = 'active'"
-            " GROUP BY p.id, p.name"
-            " HAVING last_oo IS NULL OR last_oo < :cutoff"
+            " GROUP BY p.id, p.name, p.one_on_one_cadence_days"
+            " HAVING last_oo IS NULL"
+            "     OR last_oo < date('now', '-' ||"
+            "        CAST(COALESCE(p.one_on_one_cadence_days, :global_oo) AS TEXT)"
+            "        || ' days')"
             " ORDER BY last_oo ASC NULLS FIRST"
         ),
-        {"owner": owner_id, "cutoff": oo_cutoff},
+        {"owner": owner_id, "global_oo": one_on_one_threshold_days},
     )
     overdue_oos = []
     for row in result.fetchall():
@@ -115,10 +120,41 @@ async def whats_stale(
             )
         )
 
+    # Stale stakeholder feedback
+    feedback_cutoff = (today - timedelta(days=settings.stakeholder_feedback_stale_days)).isoformat()
+    result = await conn.execute(
+        text(
+            "SELECT p.id, p.name, MAX(sf.received_date) AS last_feedback"
+            " FROM people p"
+            " LEFT JOIN stakeholder_feedback sf"
+            "   ON sf.person_id = p.id AND sf.owner_id = :owner"
+            " WHERE p.owner_id = :owner AND p.status = 'active'"
+            " GROUP BY p.id, p.name"
+            " HAVING last_feedback IS NULL OR last_feedback < :cutoff"
+            " ORDER BY last_feedback ASC NULLS FIRST"
+        ),
+        {"owner": owner_id, "cutoff": feedback_cutoff},
+    )
+    stale_feedback = []
+    for row in result.fetchall():
+        r = dict(row._mapping)
+        if r["last_feedback"]:
+            days = (today - date.fromisoformat(r["last_feedback"])).days
+        else:
+            days = None
+        stale_feedback.append(
+            StaleFeedback(
+                person_id=r["id"],
+                person_name=r["name"],
+                days_since_last_feedback=days,
+            )
+        )
+
     return StalenessReport(
         stale_allocations=stale_allocs,
         overdue_one_on_ones=overdue_oos,
         overdue_action_items=overdue_ais,
+        stale_feedback=stale_feedback,
     )
 
 
@@ -180,6 +216,25 @@ async def get_person_overview(
     next_oo_row = result.fetchone()
     next_oo = _row_to_one_on_one(next_oo_row) if next_oo_row else None
 
+    # Compute next expected 1:1 date
+    _cadence = person.one_on_one_cadence_days or settings.one_on_one_stale_days
+    _last = last_oo.scheduled_date if last_oo else None
+    if _last:
+        if isinstance(_last, str):
+            _last = date.fromisoformat(_last)
+        _next_expected = next_expected_one_on_one(
+            _last,
+            _cadence,
+            weekday=person.recurrence_weekday,
+            week_of_month=person.recurrence_week_of_month,
+        )
+    elif next_oo:
+        _next_expected = next_oo.scheduled_date
+        if isinstance(_next_expected, str):
+            _next_expected = date.fromisoformat(str(_next_expected))
+    else:
+        _next_expected = None
+
     return PersonOverview(
         person_id=person_id,
         name=person.name,
@@ -187,9 +242,13 @@ async def get_person_overview(
         seniority=person.seniority,
         start_date=person.start_date,
         status=person.status,
+        one_on_one_cadence_days=person.one_on_one_cadence_days,
+        recurrence_weekday=person.recurrence_weekday,
+        recurrence_week_of_month=person.recurrence_week_of_month,
         current_allocation=current_alloc,
         open_action_items=open_ais,
         next_one_on_one=next_oo,
         last_one_on_one_date=last_oo.scheduled_date if last_oo else None,
         recent_observations=recent_obs,
+        next_expected_date=_next_expected,
     )

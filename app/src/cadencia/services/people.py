@@ -1,11 +1,12 @@
 import json
 import logging
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from cadencia.config import settings
 from cadencia.models.people import (
     CreatePersonInput,
     PersonDetail,
@@ -13,6 +14,7 @@ from cadencia.models.people import (
     UpdatePersonInput,
 )
 from cadencia.services.exceptions import AmbiguousError, NotFoundError
+from cadencia.services.scheduling import next_expected_one_on_one
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +30,9 @@ def _row_to_detail(row: object) -> PersonDetail:
         status=r["status"],
         created_at=r["created_at"],
         updated_at=r["updated_at"],
+        one_on_one_cadence_days=r.get("one_on_one_cadence_days"),
+        recurrence_weekday=r.get("recurrence_weekday"),
+        recurrence_week_of_month=r.get("recurrence_week_of_month"),
     )
 
 
@@ -111,6 +116,20 @@ async def list_people(
         )
         ai_count = ai_result.scalar() or 0
 
+        cadence = r.get("one_on_one_cadence_days") or settings.one_on_one_stale_days
+        last_oo_date_obj = date.fromisoformat(str(oo_row[0])) if oo_row and oo_row[0] else None
+        if last_oo_date_obj and not (next_oo_row and next_oo_row[0]):
+            next_expected = next_expected_one_on_one(
+                last_oo_date_obj,
+                cadence,
+                weekday=r.get("recurrence_weekday"),
+                week_of_month=r.get("recurrence_week_of_month"),
+            )
+        elif next_oo_row and next_oo_row[0]:
+            next_expected = date.fromisoformat(str(next_oo_row[0]))
+        else:
+            next_expected = None
+
         summaries.append(
             PersonSummary(
                 id=person_id,
@@ -124,6 +143,10 @@ async def list_people(
                 last_one_on_one_date=oo_row[0] if oo_row else None,
                 next_one_on_one_date=next_oo_row[0] if next_oo_row else None,
                 open_action_items_count=ai_count,
+                one_on_one_cadence_days=r.get("one_on_one_cadence_days"),
+                recurrence_weekday=r.get("recurrence_weekday"),
+                recurrence_week_of_month=r.get("recurrence_week_of_month"),
+                next_expected_date=next_expected,
             )
         )
     return summaries
@@ -180,6 +203,10 @@ async def resolve_person(
             last_one_on_one_date=None,
             next_one_on_one_date=None,
             open_action_items_count=0,
+            one_on_one_cadence_days=r.get("one_on_one_cadence_days"),
+            recurrence_weekday=r.get("recurrence_weekday"),
+            recurrence_week_of_month=r.get("recurrence_week_of_month"),
+            next_expected_date=None,
         )
     ]
 
@@ -195,9 +222,10 @@ async def create_person(
     await conn.execute(
         text(
             "INSERT INTO people (id, owner_id, name, role, seniority, start_date,"
-            " status, created_at, updated_at)"
+            " status, one_on_one_cadence_days, recurrence_weekday, recurrence_week_of_month,"
+            " created_at, updated_at)"
             " VALUES (:id, :owner, :name, :role, :seniority, :start_date,"
-            " :status, :now, :now)"
+            " :status, :cadence, :recurrence_weekday, :recurrence_week_of_month, :now, :now)"
         ),
         {
             "id": person_id,
@@ -207,6 +235,9 @@ async def create_person(
             "seniority": data.seniority,
             "start_date": data.start_date.isoformat() if data.start_date else None,
             "status": data.status,
+            "cadence": data.one_on_one_cadence_days,
+            "recurrence_weekday": data.recurrence_weekday,
+            "recurrence_week_of_month": data.recurrence_week_of_month,
             "now": now,
         },
     )
@@ -254,6 +285,12 @@ async def update_person(
     if data.status is not None:
         updates["status"] = data.status
         set_clauses.append("status = :status")
+    if data.recurrence_weekday is not None:
+        updates["recurrence_weekday"] = data.recurrence_weekday
+        set_clauses.append("recurrence_weekday = :recurrence_weekday")
+    if data.recurrence_week_of_month is not None:
+        updates["recurrence_week_of_month"] = data.recurrence_week_of_month
+        set_clauses.append("recurrence_week_of_month = :recurrence_week_of_month")
 
     await conn.execute(
         text(
@@ -269,6 +306,42 @@ async def update_person(
                 "table": "people",
                 "operation": "update",
                 "record_id": person_id,
+                "source": source,
+                "ts": now,
+            }
+        )
+    )
+    return await get_person(conn, person_id, owner_id)
+
+
+async def set_one_on_one_cadence(
+    conn: AsyncConnection,
+    person_id: str,
+    cadence_days: int | None,
+    owner_id: str = "default",
+    source: str = "api",
+) -> PersonDetail:
+    """Set (or clear) the per-person 1:1 cadence override.
+
+    Pass cadence_days=None to remove the override and fall back to the global default.
+    """
+    await get_person(conn, person_id, owner_id)  # verify exists
+    now = datetime.now(UTC).isoformat()
+    await conn.execute(
+        text(
+            "UPDATE people SET one_on_one_cadence_days = :cadence, updated_at = :now"
+            " WHERE id = :id AND owner_id = :owner"
+        ),
+        {"cadence": cadence_days, "now": now, "id": person_id, "owner": owner_id},
+    )
+    logger.info(
+        json.dumps(
+            {
+                "event": "write",
+                "table": "people",
+                "operation": "set_cadence",
+                "record_id": person_id,
+                "cadence_days": cadence_days,
                 "source": source,
                 "ts": now,
             }

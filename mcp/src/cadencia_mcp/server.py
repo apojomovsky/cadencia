@@ -14,17 +14,22 @@ from cadencia.config import settings
 from cadencia.db.connection import close_engine, get_connection
 from cadencia.db.migrations import run_migrations
 from cadencia.models.allocations import UpdateAllocationInput
+from cadencia.models.feedback import AddFeedbackInput
 from cadencia.models.observations import AddObservationInput
 from cadencia.models.one_on_ones import ActionItemInput, LogOneOnOneInput
+from cadencia.models.stakeholders import CreateStakeholderInput
 from cadencia.services import people as people_svc
 from cadencia.services.action_items import complete_action_item as svc_complete
 from cadencia.services.allocations import get_current_allocation
 from cadencia.services.allocations import update_allocation as svc_update_alloc
 from cadencia.services.exceptions import AmbiguousError, NotFoundError
+from cadencia.services.feedback import add_feedback as svc_add_feedback
 from cadencia.services.observations import add_observation as svc_add_obs
 from cadencia.services.one_on_ones import log_one_on_one as svc_log_oo
 from cadencia.services.queries import get_person_overview
 from cadencia.services.queries import whats_stale as svc_whats_stale
+from cadencia.services.stakeholders import create_stakeholder as svc_create_stakeholder
+from cadencia.services.stakeholders import list_stakeholders as svc_list_stakeholders
 
 logging.basicConfig(level=settings.log_level)
 logger = logging.getLogger(__name__)
@@ -105,6 +110,10 @@ async def get_person(person: str) -> dict[str, Any]:
         "seniority": overview.seniority,
         "start_date": str(overview.start_date) if overview.start_date else None,
         "status": overview.status,
+        "one_on_one_cadence_days": overview.one_on_one_cadence_days,
+        "recurrence_weekday": detail.recurrence_weekday,
+        "recurrence_week_of_month": detail.recurrence_week_of_month,
+        "next_expected_date": str(overview.next_expected_date) if overview.next_expected_date else None,
         "current_allocation": (
             overview.current_allocation.model_dump(mode="json")
             if overview.current_allocation else None
@@ -223,6 +232,9 @@ async def update_allocation(
     rate_band: str | None = None,
     start_date: str | None = None,
     notes: str | None = None,
+    focus: str | None = None,
+    activity_type: str | None = None,
+    stakeholder_id: str | None = None,
 ) -> dict[str, Any]:
     """Update the current allocation for a person.
 
@@ -235,6 +247,9 @@ async def update_allocation(
     rate_band: billing rate band, "P1" | "P2" | "P3".
     start_date: ISO 8601 date. Defaults to today.
     notes: reason for the change. Optional but encouraged so future-you remembers why.
+    focus: free-form description of what the person is working on (especially for bench/internal).
+    activity_type: "training" | "collaboration" | "research" | "client_prep" | "other"
+    stakeholder_id: UUID of a stakeholder linked to this work (use list_stakeholders to find IDs).
     """
     async with get_connection() as conn:
         try:
@@ -253,6 +268,9 @@ async def update_allocation(
             rate_band=rate_band,  # type: ignore[arg-type]
             start_date=start_date,  # type: ignore[arg-type]
             notes=notes,
+            focus=focus,
+            activity_type=activity_type,  # type: ignore[arg-type]
+            stakeholder_id=stakeholder_id,
         )
         alloc = await svc_update_alloc(conn, data, owner_id=settings.owner_id, source="mcp")
 
@@ -296,6 +314,36 @@ async def complete_action_item(
 
 
 @mcp.tool()
+async def set_one_on_one_cadence(
+    person: str,
+    cadence_days: int | None = None,
+) -> dict[str, Any]:
+    """Set the 1:1 meeting cadence for a person.
+
+    person: name (partial match ok) or UUID.
+    cadence_days: days between 1:1s (e.g. 14 for bi-weekly, 30 for monthly).
+                  Omit or pass null to reset to the global default.
+    """
+    async with get_connection() as conn:
+        try:
+            detail = await _resolve(conn, person)
+        except NotFoundError:
+            return _err("NotFound", f"No person found matching {person!r}")
+        except AmbiguousError as e:
+            return _err("Ambiguous", f"Multiple people match {person!r}", candidates=e.candidates)
+
+        updated = await people_svc.set_one_on_one_cadence(
+            conn, detail.id, cadence_days, settings.owner_id, source="mcp"
+        )
+
+    return {
+        "person_id": updated.id,
+        "person_name": updated.name,
+        "one_on_one_cadence_days": updated.one_on_one_cadence_days,
+    }
+
+
+@mcp.tool()
 async def whats_stale(
     allocation_threshold_days: int = 45,
     one_on_one_threshold_days: int = 14,
@@ -315,6 +363,100 @@ async def whats_stale(
             one_on_one_threshold_days=one_on_one_threshold_days,
         )
     return report.model_dump(mode="json")
+
+
+@mcp.tool()
+async def list_stakeholders() -> list[dict[str, Any]]:
+    """List all stakeholders (account managers, clients, internal contacts, etc.)."""
+    async with get_connection() as conn:
+        stakeholders = await svc_list_stakeholders(conn, settings.owner_id)
+    return [
+        {
+            "id": s.id,
+            "name": s.name,
+            "type": s.type,
+            "organization": s.organization,
+            "email": s.email,
+        }
+        for s in stakeholders
+    ]
+
+
+@mcp.tool()
+async def create_stakeholder(
+    name: str,
+    type: str = "other",
+    organization: str | None = None,
+    email: str | None = None,
+    notes: str | None = None,
+) -> dict[str, Any]:
+    """Create a new stakeholder.
+
+    name: stakeholder's full name.
+    type: "am" (account manager) | "client" | "internal" | "other"
+    organization: company or team name.
+    email: optional contact email.
+    notes: any relevant context.
+    """
+    async with get_connection() as conn:
+        data = CreateStakeholderInput(
+            name=name,
+            type=type,  # type: ignore[arg-type]
+            organization=organization,
+            email=email,
+            notes=notes,
+        )
+        stakeholder = await svc_create_stakeholder(conn, data, settings.owner_id, source="mcp")
+    return {
+        "id": stakeholder.id,
+        "name": stakeholder.name,
+        "type": stakeholder.type,
+        "organization": stakeholder.organization,
+    }
+
+
+@mcp.tool()
+async def add_stakeholder_feedback(
+    person: str,
+    content: str,
+    stakeholder_id: str | None = None,
+    received_date: str | None = None,
+    tags: list[str] | None = None,
+) -> dict[str, Any]:
+    """Record stakeholder feedback about a person.
+
+    person: name (partial match ok) or UUID.
+    content: the feedback, verbatim or summarized.
+    stakeholder_id: UUID of the stakeholder who gave the feedback (use list_stakeholders).
+    received_date: ISO 8601 date the feedback was received. Defaults to today.
+    tags: optional labels, e.g. ["performance", "communication"].
+    """
+    from datetime import date as _date
+
+    async with get_connection() as conn:
+        try:
+            detail = await _resolve(conn, person)
+        except NotFoundError:
+            return _err("NotFound", f"No person found matching {person!r}")
+        except AmbiguousError as e:
+            return _err("Ambiguous", f"Multiple people match {person!r}", candidates=e.candidates)
+
+        data = AddFeedbackInput(
+            person_id=detail.id,
+            stakeholder_id=stakeholder_id,
+            received_date=_date.fromisoformat(received_date) if received_date else None,
+            content=content,
+            tags=tags or [],
+        )
+        fb = await svc_add_feedback(conn, data, owner_id=settings.owner_id, source="mcp")
+
+    return {
+        "feedback_id": fb.id,
+        "person_id": fb.person_id,
+        "person_name": detail.name,
+        "received_date": str(fb.received_date),
+        "stakeholder_id": fb.stakeholder_id,
+    }
 
 
 # ---- ASGI app (SSE transport + health endpoint) ----------------------------

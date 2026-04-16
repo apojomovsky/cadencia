@@ -32,10 +32,17 @@ class OverdueActionItem(BaseModel):
     days_overdue: int
 
 
+class StaleFeedback(BaseModel):
+    person_id: str
+    person_name: str
+    days_since_last_feedback: int | None  # None = never received
+
+
 class StalenessReport(BaseModel):
     stale_allocations: list[StaleAllocation]
     overdue_one_on_ones: list[OverdueOneOnOne]
     overdue_action_items: list[OverdueActionItem]
+    stale_feedback: list[StaleFeedback]
 
 
 class OneOnOnePrep(BaseModel):
@@ -57,8 +64,12 @@ class PersonOverview(BaseModel):
     seniority: str | None
     start_date: date | None
     status: str
+    one_on_one_cadence_days: int | None
+    recurrence_weekday: int | None
+    recurrence_week_of_month: int | None
     current_allocation: Allocation | None
     open_action_items: list[ActionItem]
     next_one_on_one: OneOnOne | None
     last_one_on_one_date: date | None
     recent_observations: list[Observation]  # last 90 days, normal sensitivity only
+    next_expected_date: date | None

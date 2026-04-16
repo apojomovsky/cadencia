@@ -68,8 +68,12 @@ claude
 | `get_person` | Full profile by name or ID |
 | `add_observation` | Append a tagged observation |
 | `log_one_on_one` | Record a 1:1 with notes and action items |
-| `update_allocation` | Set or update a client/project allocation |
+| `update_allocation` | Set or update a client/project allocation (supports bench focus and activity type) |
 | `complete_action_item` | Mark an action item done |
+| `set_one_on_one_cadence` | Override the 1:1 cadence for one person |
+| `list_stakeholders` | List stakeholders (AMs, clients, internal contacts) |
+| `create_stakeholder` | Add a new stakeholder |
+| `add_stakeholder_feedback` | Record feedback received from a stakeholder |
 | `whats_stale` | Team-wide staleness report |
 
 See `AGENTS.md` for guidance on working with this codebase via an AI agent.

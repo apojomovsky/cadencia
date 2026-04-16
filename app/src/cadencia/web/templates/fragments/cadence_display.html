@@ -1,0 +1,12 @@
+<span id="cadence-widget">
+  every
+  {% if cadence_days %}
+    <strong>{{ cadence_days }}d</strong>
+  {% else %}
+    <strong>{{ global_default }}d</strong> <span style="color:var(--muted);font-size:12px;">(global)</span>
+  {% endif %}
+  <button class="edit-btn"
+    hx-get="/people/{{ person_id }}/cadence-edit-form"
+    hx-target="#cadence-widget"
+    hx-swap="outerHTML">edit</button>
+</span>
