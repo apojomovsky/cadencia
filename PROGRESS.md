@@ -100,6 +100,7 @@ See `AGENTS.md` section "Commit workflow" for the full convention.
 - [x] Tool: `complete_action_item`
 - [x] Tool: `whats_stale`
 - [x] `GET /health` on port 8081 for the Docker healthcheck
+- [x] Gemini CLI integration: `.gemini/agents/cadencia.yaml` configuration
 
 **Verify**: Configure Claude Desktop to point at `http://localhost:8081/sse`. Call each tool from a Claude conversation with a seeded database. Confirm writes persist and reads return correct data.
 
