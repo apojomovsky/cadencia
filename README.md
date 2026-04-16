@@ -16,84 +16,22 @@
 <br />
 
 A self-hosted people management journal for engineering managers. Cadencia tracks your direct
-reports: their allocations, 1:1 history, observations, and open action items. It surfaces
-stale data before you have to think to look for it.
-
-It runs entirely on your machine via Docker Compose. Your data never leaves. An MCP server lets
-you query and capture notes directly from a Claude conversation, and a web UI gives you a
-full-team dashboard and per-person detail view for when you want to browse rather than ask.
-
----
-
-## Features
-
-- **Dashboard:** stale allocations, overdue 1:1s, and aging action items surfaced automatically on every load
-- **Per-person view:** current allocation, open action items, recent observations, 1:1 log, and allocation history in one page
-- **MCP server:** seven tools callable from Claude Code or any MCP-compatible client
-- **Local-first:** SQLite on a named Docker volume; no external database, no cloud account required to run
-- **Daily backups:** automated SQLite online backup, gzipped and uploaded to Google Drive via rclone
-- **ADHD-aware design:** the system brings stale data forward; nothing requires you to remember to check
-
----
-
-## Prerequisites
-
-- Docker and Docker Compose v2
-- rclone (for Google Drive backups; optional for local-only use)
+reports: allocations, 1:1 history, observations, and open action items. It surfaces stale data
+before you have to think to look for it. Everything runs locally via Docker Compose. Your data
+never leaves your machine.
 
 ---
 
 ## Quick start
 
-### 1. Clone and run the setup wizard
-
 ```bash
 git clone https://github.com/apojomovsky/cadencia.git
 cd cadencia
-make bootstrap
+make bootstrap   # configure once: DB location, ports, staleness thresholds
+make up          # build images and start
 ```
 
-The wizard asks about database location, backup settings, staleness thresholds, and ports.
-It writes `.env` and, if you choose a custom DB path, `docker-compose.override.yml`.
-Run it again any time to reconfigure. Alternatively, copy `.env.example` to `.env` and edit by hand.
-
-### 2. Set up rclone for Google Drive backups
-
-```bash
-# Install rclone: https://rclone.org/install/
-mkdir -p secrets
-
-# Configure a remote named "gdrive"
-rclone config
-# Follow the prompts:
-#   Name: gdrive
-#   Type: drive (Google Drive)
-#   Complete the OAuth flow in your browser
-
-cp ~/.config/rclone/rclone.conf secrets/rclone.conf
-```
-
-If `secrets/rclone.conf` is absent, the backup container runs but skips the upload step. Safe for local development.
-
-### 3. Start
-
-```bash
-make up
-```
-
-First run builds all three images. Open `http://localhost:8080` once the containers are healthy (about 30 seconds).
-
-### 4. Verify
-
-```bash
-docker compose ps
-
-curl http://localhost:8080/api/health
-# {"status": "ok", "version": "0.1.0"}
-
-curl http://localhost:8081/health
-# {"status": "ok"}
-```
+Open `http://localhost:8080`. Done.
 
 ---
 
@@ -101,39 +39,37 @@ curl http://localhost:8081/health
 
 ```bash
 make setup-dev   # install dev dependencies and git pre-commit hook (run once)
-make dev         # start with hot reload (dev overlay)
-make test        # run the test suite inside the app container
+make dev         # start with hot reload
+make test        # run the test suite
 make lint        # ruff check
 make lint-fix    # ruff check --fix
 make logs        # follow container logs
-make shell       # open a shell in the app container
+make shell       # shell into the app container
 make down        # stop the stack
 ```
 
-Run `make` with no arguments to see all available commands.
+Run `make` with no arguments to see all available targets.
 
 ---
 
-## Using with Claude Code
+## MCP tools (Claude Code)
 
 The repo ships `.mcp.json` at the root. Claude Code picks it up automatically when you open a
-session from this directory. Start the stack first, then open a Claude conversation:
+session from this directory:
 
 ```bash
 make up
-claude  # or open the project in your IDE with Claude Code
+claude
 ```
-
-The seven MCP tools become available immediately:
 
 | Tool | What it does |
 |---|---|
-| `list_people` | List all direct reports (filter by status) |
-| `get_person` | Full profile for one person by name or ID |
+| `list_people` | List all direct reports |
+| `get_person` | Full profile by name or ID |
 | `add_observation` | Append a tagged observation |
 | `log_one_on_one` | Record a 1:1 with notes and action items |
 | `update_allocation` | Set or update a client/project allocation |
-| `complete_action_item` | Mark an action item done with optional notes |
+| `complete_action_item` | Mark an action item done |
 | `whats_stale` | Team-wide staleness report |
 
 See `AGENTS.md` for guidance on working with this codebase via an AI agent.
@@ -143,15 +79,31 @@ See `AGENTS.md` for guidance on working with this codebase via an AI agent.
 ## Restoring from a backup
 
 ```bash
-# Interactive: lists available backups and prompts for selection
-./scripts/restore.sh
-
-# Direct: restore a specific file
-./scripts/restore.sh cadencia-20260415-030013.db.gz
+./scripts/restore.sh                              # interactive: lists and prompts
+./scripts/restore.sh cadencia-20260415-030013.db.gz  # restore a specific file
 ```
 
-The restore script stops the running stack, replaces the database volume, and exits cleanly.
-Restart with `make up`.
+The script stops the stack, replaces the database, and exits. Restart with `make up`.
+
+---
+
+## Google Drive backups (optional)
+
+Cadencia backs up the database daily and uploads it to Google Drive via rclone. Without this
+setup the app runs fine; backups are skipped silently.
+
+```bash
+# Install rclone: https://rclone.org/install/
+mkdir -p secrets
+
+rclone config
+# Name: gdrive / Type: drive / complete the OAuth flow in your browser
+
+cp ~/.config/rclone/rclone.conf secrets/rclone.conf
+make up   # or make down && make up to pick up the new config
+```
+
+Backup schedule and destination are set during `make bootstrap` (or editable in `.env`).
 
 ---
 
@@ -162,11 +114,9 @@ app/          FastAPI web app and shared service layer
 mcp/          MCP server (wraps the service layer)
 backup/       Backup container (SQLite online backup + rclone)
 assets/       Logo and brand assets
-db/init/      SQL migration files
-scripts/      Utility scripts (restore)
+scripts/      bootstrap, restore, dev setup
 docs/SPEC.md  Full implementation spec
 AGENTS.md     Guidance for AI agents working on this codebase
-PROGRESS.md   Implementation checklist
 ```
 
 ---
