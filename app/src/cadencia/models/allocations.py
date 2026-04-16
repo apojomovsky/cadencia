@@ -17,6 +17,9 @@ class Allocation(BaseModel):
     notes: str | None
     created_at: datetime
     updated_at: datetime
+    focus: str | None
+    activity_type: Literal["training", "collaboration", "research", "client_prep", "other"] | None
+    stakeholder_id: str | None
 
 
 class UpdateAllocationInput(BaseModel):
@@ -27,3 +30,8 @@ class UpdateAllocationInput(BaseModel):
     rate_band: Literal["P1", "P2", "P3"] | None = None
     start_date: date | None = None  # defaults to today in service layer
     notes: str | None = None
+    focus: str | None = None
+    activity_type: (
+        Literal["training", "collaboration", "research", "client_prep", "other"] | None
+    ) = None
+    stakeholder_id: str | None = None

@@ -3,7 +3,7 @@
 
 {% block content %}
 
-{% if not stale_allocs and not overdue_oos and not overdue_ais %}
+{% if not stale_allocs and not overdue_oos and not overdue_ais and not stale_feedback %}
 <p class="empty" style="margin-top: 24px;">All clear. Nothing needs attention right now.</p>
 {% endif %}
 
@@ -66,6 +66,24 @@
         <span class="action-item-owner">{{ item.person_name }}</span>
       </div>
       <span class="action-item-due overdue">{{ item.days_overdue }}d overdue</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if stale_feedback %}
+<div class="section">
+  <div class="section-header">Stale Stakeholder Feedback</div>
+  <div class="section-body">
+    {% for item in stale_feedback %}
+    <div class="action-item">
+      <div class="action-item-text">
+        <a href="/people/{{ item.person_id }}">{{ item.person_name }}</a>
+      </div>
+      <span class="action-item-due overdue">
+        {% if item.days_since_last_feedback is none %}never collected{% else %}{{ item.days_since_last_feedback }}d ago{% endif %}
+      </span>
     </div>
     {% endfor %}
   </div>

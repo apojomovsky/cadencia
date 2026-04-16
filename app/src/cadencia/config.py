@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     owner_id: str = "default"
     allocation_stale_days: int = 45
     one_on_one_stale_days: int = 14
+    stakeholder_feedback_stale_days: int = 60
     log_level: str = "INFO"
 
 

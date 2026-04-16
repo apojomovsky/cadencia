@@ -1,0 +1,39 @@
+{% if recent_feedback %}
+{% for fb in recent_feedback %}
+<div class="observation">
+  <div class="obs-meta">
+    {{ fb.received_date }}
+    {% if fb.stakeholder_id %}
+      {% for s in all_stakeholders %}{% if s.id == fb.stakeholder_id %}&nbsp;&middot;&nbsp;{{ s.name }}{% endif %}{% endfor %}
+    {% endif %}
+  </div>
+  <div>{{ fb.content }}</div>
+  {% if fb.tags %}
+  <div class="obs-tags">
+    {% for tag in fb.tags %}
+    <span class="obs-tag">{{ tag }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endfor %}
+{% else %}
+<p class="empty">No stakeholder feedback recorded yet.</p>
+{% endif %}
+
+<form hx-post="/people/{{ person_id }}/add-feedback"
+      hx-target="#feedback-section"
+      hx-swap="innerHTML"
+      style="margin-top: 12px;">
+  <div style="display:flex; gap: 8px; flex-wrap: wrap; align-items: flex-start;">
+    <select name="stakeholder_id" style="font-size:13px; padding:4px 6px; border:1px solid var(--border); border-radius:4px; background:var(--bg); color:var(--fg);">
+      <option value="">No stakeholder</option>
+      {% for s in all_stakeholders %}
+      <option value="{{ s.id }}">{{ s.name }}</option>
+      {% endfor %}
+    </select>
+    <textarea name="content" placeholder="Paste or summarize feedback..." rows="2"
+      style="flex:1; min-width:200px; font-size:13px; padding:4px 8px; border:1px solid var(--border); border-radius:4px; background:var(--bg); color:var(--fg);"></textarea>
+    <button type="submit" style="padding:4px 12px; font-size:13px;">Add</button>
+  </div>
+</form>

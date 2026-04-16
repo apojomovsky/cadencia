@@ -28,6 +28,9 @@ def _row_to_allocation(row: object) -> Allocation:
         notes=r["notes"],
         created_at=r["created_at"],
         updated_at=r["updated_at"],
+        focus=r.get("focus"),
+        activity_type=r.get("activity_type"),
+        stakeholder_id=r.get("stakeholder_id"),
     )
 
 
@@ -79,9 +82,11 @@ async def update_allocation(
         text(
             "INSERT INTO allocations"
             " (id, owner_id, person_id, type, client_or_project, percent, rate_band,"
-            "  start_date, end_date, last_confirmed_date, notes, created_at, updated_at)"
+            "  start_date, end_date, last_confirmed_date, notes, focus, activity_type,"
+            "  stakeholder_id, created_at, updated_at)"
             " VALUES (:id, :owner, :person_id, :type, :client, :percent, :rate_band,"
-            "  :start, NULL, :today, :notes, :now, :now)"
+            "  :start, NULL, :today, :notes, :focus, :activity_type,"
+            "  :stakeholder_id, :now, :now)"
         ),
         {
             "id": alloc_id,
@@ -94,6 +99,9 @@ async def update_allocation(
             "start": start,
             "today": today,
             "notes": data.notes,
+            "focus": data.focus,
+            "activity_type": data.activity_type,
+            "stakeholder_id": data.stakeholder_id,
             "now": now,
         },
     )
