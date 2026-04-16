@@ -504,7 +504,7 @@ async def read_context(filename: str) -> dict[str, Any]:
 # ---- ASGI app (SSE transport + health endpoint) ----------------------------
 
 @asynccontextmanager
-async def lifespan(app: Starlette):  # type: ignore[type-arg]
+async def lifespan(app: Any):
     logger.info("Cadencia MCP starting up")
     async with get_connection() as conn:
         await run_migrations(conn)
@@ -517,10 +517,10 @@ async def health(request: Request) -> JSONResponse:
     return JSONResponse({"status": "ok"})
 
 
-app = Starlette(
-    lifespan=lifespan,
-    routes=[
-        Route("/health", health),
-        Mount("/", app=mcp.sse_app()),
-    ],
-)
+# Use mcp.sse_app() as the main app directly to avoid issues with Mount
+app = mcp.sse_app()
+app.router.lifespan_context = lifespan
+app.add_route("/health", health)
+
+if __name__ == "__main__":
+    mcp.run()
