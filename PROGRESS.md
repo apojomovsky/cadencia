@@ -91,15 +91,15 @@ See `AGENTS.md` section "Commit workflow" for the full convention.
 
 ## Phase 6: MCP server
 
-- [ ] `mcp/src/em_journal_mcp/server.py`: MCP server with HTTP/SSE transport on port 8081
-- [ ] Tool: `list_people`
-- [ ] Tool: `get_person` (including `Ambiguous` error for partial name matches)
-- [ ] Tool: `add_observation`
-- [ ] Tool: `log_one_on_one`
-- [ ] Tool: `update_allocation`
-- [ ] Tool: `complete_action_item`
-- [ ] Tool: `whats_stale`
-- [ ] `GET /health` on port 8081 for the Docker healthcheck
+- [x] `mcp/src/em_journal_mcp/server.py`: MCP server with HTTP/SSE transport on port 8081
+- [x] Tool: `list_people`
+- [x] Tool: `get_person` (including `Ambiguous` error for partial name matches)
+- [x] Tool: `add_observation`
+- [x] Tool: `log_one_on_one`
+- [x] Tool: `update_allocation`
+- [x] Tool: `complete_action_item`
+- [x] Tool: `whats_stale`
+- [x] `GET /health` on port 8081 for the Docker healthcheck
 
 **Verify**: Configure Claude Desktop to point at `http://localhost:8081/sse`. Call each tool from a Claude conversation with a seeded database. Confirm writes persist and reads return correct data.
 
