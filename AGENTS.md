@@ -15,6 +15,28 @@ The full product spec is in `docs/SPEC.md`. Read it before implementing anything
 
 ---
 
+## Getting started (MCP setup for agents)
+
+The repo root contains `.mcp.json` which points Claude Code at the EM Journal MCP server
+(`http://localhost:8081/sse`). For the tools to work, the stack must be running:
+
+```bash
+docker compose up -d
+```
+
+That starts three containers: `app` (web UI + REST API on port 8080), `mcp` (MCP server on
+port 8081), and `backup` (daily SQLite backup to Google Drive). All three must be healthy
+before the MCP tools respond. Check with:
+
+```bash
+docker compose ps
+```
+
+If the MCP container is not running, the tools will fail silently. Start it before attempting
+any tool calls. The `.mcp.json` is already wired; no manual Claude Code config is needed.
+
+---
+
 ## The cardinal rules
 
 1. **Do less, not more.** If a feature is not in the spec, do not add it. When in doubt, open a
