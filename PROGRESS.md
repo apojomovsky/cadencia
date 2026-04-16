@@ -77,13 +77,13 @@ See `AGENTS.md` section "Commit workflow" for the full convention.
 
 ## Phase 5: Web UI
 
-- [ ] Base Jinja2 template with backup status indicator in header (all pages)
-- [ ] `web/templates/people_list.html`: list page matching SPEC.md section 6.2 wireframe
-- [ ] `web/templates/person_detail.html`: detail page matching SPEC.md section 6.3 wireframe
-- [ ] HTMX: complete action item updates fragment without full reload
-- [ ] HTMX: collapsed sections (allocation history, full log) load on expand
-- [ ] `htmx.min.js` vendored into `web/static/` (no CDN)
-- [ ] CSS: minimal, readable, respects `prefers-color-scheme`
+- [x] Base Jinja2 template with backup status indicator in header (all pages)
+- [x] `web/templates/people_list.html`: list page matching SPEC.md section 6.2 wireframe
+- [x] `web/templates/person_detail.html`: detail page matching SPEC.md section 6.3 wireframe
+- [x] HTMX: complete action item updates fragment without full reload
+- [x] HTMX: collapsed sections (allocation history, full log) load on expand
+- [x] `htmx.min.js` vendored into `web/static/` (no CDN)
+- [x] CSS: minimal, readable, respects `prefers-color-scheme`
 
 **Verify**: Open `http://localhost:8080` in a browser with seeded data. Walk through the person detail page: all five sections present, action item completion works, collapsed sections expand.
 

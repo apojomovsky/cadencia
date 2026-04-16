@@ -11,7 +11,10 @@ class PersonSummary(BaseModel):
     seniority: Literal["P1", "P2", "P3"] | None
     status: Literal["active", "leaving", "left"]
     current_allocation_type: Literal["client", "internal", "bench"] | None
+    current_allocation_confirmed_date: date | None
+    current_allocation_label: str | None
     last_one_on_one_date: date | None
+    next_one_on_one_date: date | None
     open_action_items_count: int
 
 

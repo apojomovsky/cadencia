@@ -56,17 +56,29 @@ async def list_people(
         r = dict(row._mapping)
         person_id = r["id"]
 
-        # Current allocation type
+        # Current allocation
         alloc_result = await conn.execute(
             text(
-                "SELECT type FROM allocations WHERE person_id = :pid AND end_date IS NULL"
+                "SELECT type, client_or_project, last_confirmed_date"
+                " FROM allocations WHERE person_id = :pid AND end_date IS NULL"
                 " LIMIT 1"
             ),
             {"pid": person_id},
         )
         alloc_row = alloc_result.fetchone()
+        alloc_type = None
+        alloc_confirmed = None
+        alloc_label = None
+        if alloc_row:
+            ar = dict(alloc_row._mapping)
+            alloc_type = ar["type"]
+            alloc_confirmed = ar["last_confirmed_date"]
+            if ar["client_or_project"]:
+                alloc_label = ar["client_or_project"]
+            else:
+                alloc_label = alloc_type.title() if alloc_type else None
 
-        # Last 1:1 date
+        # Last completed 1:1 date
         oo_result = await conn.execute(
             text(
                 "SELECT scheduled_date FROM one_on_ones"
@@ -76,6 +88,18 @@ async def list_people(
             {"pid": person_id},
         )
         oo_row = oo_result.fetchone()
+
+        # Next scheduled (uncompleted) 1:1
+        next_oo_result = await conn.execute(
+            text(
+                "SELECT scheduled_date FROM one_on_ones"
+                " WHERE person_id = :pid AND completed = 0"
+                "   AND scheduled_date >= date('now')"
+                " ORDER BY scheduled_date ASC LIMIT 1"
+            ),
+            {"pid": person_id},
+        )
+        next_oo_row = next_oo_result.fetchone()
 
         # Open action items count
         ai_result = await conn.execute(
@@ -94,8 +118,11 @@ async def list_people(
                 role=r["role"],
                 seniority=r["seniority"],
                 status=r["status"],
-                current_allocation_type=alloc_row[0] if alloc_row else None,
+                current_allocation_type=alloc_type,
+                current_allocation_confirmed_date=alloc_confirmed,
+                current_allocation_label=alloc_label,
                 last_one_on_one_date=oo_row[0] if oo_row else None,
+                next_one_on_one_date=next_oo_row[0] if next_oo_row else None,
                 open_action_items_count=ai_count,
             )
         )
@@ -148,7 +175,10 @@ async def resolve_person(
             seniority=r["seniority"],
             status=r["status"],
             current_allocation_type=None,
+            current_allocation_confirmed_date=None,
+            current_allocation_label=None,
             last_one_on_one_date=None,
+            next_one_on_one_date=None,
             open_action_items_count=0,
         )
     ]

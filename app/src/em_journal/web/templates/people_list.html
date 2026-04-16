@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}People — EM Journal{% endblock %}
+
+{% block content %}
+<div class="people-list">
+  {% for person in people %}
+  <a class="person-row" href="/people/{{ person.id }}">
+    <span class="person-name">{{ person.name }}</span>
+    <span class="person-role">{{ person.role or "" }}</span>
+    <span class="person-band">{{ person.seniority or "" }}</span>
+
+    {# Allocation badge #}
+    {% if person.alloc_stale_days is not none %}
+      <span class="badge warn">alloc: STALE {{ person.alloc_stale_days }}d</span>
+    {% elif person.current_allocation_type == "bench" %}
+      <span class="badge muted">BENCH</span>
+    {% elif person.current_allocation_label %}
+      <span class="badge">{{ person.current_allocation_label }}</span>
+    {% else %}
+      <span class="badge muted">no alloc</span>
+    {% endif %}
+
+    {# 1:1 badge #}
+    {% if person.one_on_one_days_ago is none %}
+      <span class="badge warn">1:1 never</span>
+    {% elif person.one_on_one_overdue %}
+      <span class="badge danger">1:1 OVERDUE</span>
+    {% elif person.one_on_one_days_until is not none %}
+      <span class="badge">1:1 in {{ person.one_on_one_days_until }}d</span>
+    {% else %}
+      <span class="badge muted">1:1 {{ person.one_on_one_days_ago }}d ago</span>
+    {% endif %}
+
+    {# Action items badge #}
+    {% if person.open_action_items_count > 0 %}
+      <span class="badge warn">{{ person.open_action_items_count }} open</span>
+    {% else %}
+      <span class="badge muted">0 open</span>
+    {% endif %}
+  </a>
+  {% else %}
+  <p class="empty">No active people yet. Add someone via MCP.</p>
+  {% endfor %}
+</div>
+{% endblock %}

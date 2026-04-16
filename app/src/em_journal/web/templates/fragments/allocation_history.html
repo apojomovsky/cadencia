@@ -1,0 +1,20 @@
+{% if allocations %}
+{% for a in allocations %}
+<div class="observation">
+  <div class="obs-meta">
+    {{ a.start_date or "?" }}
+    {% if a.end_date %}&rarr; {{ a.end_date }}{% else %}&rarr; present{% endif %}
+  </div>
+  <div>
+    {% if a.client_or_project %}{{ a.client_or_project }}{% else %}{{ a.type | title }}{% endif %}
+    {% if a.percent %}&nbsp;&middot;&nbsp;{{ a.percent }}%{% endif %}
+    {% if a.rate_band %}&nbsp;&middot;&nbsp;{{ a.rate_band }}{% endif %}
+  </div>
+  {% if a.notes %}
+  <div style="font-size: 13px; color: var(--muted); margin-top: 2px;">{{ a.notes }}</div>
+  {% endif %}
+</div>
+{% endfor %}
+{% else %}
+<p class="empty">No allocation history.</p>
+{% endif %}

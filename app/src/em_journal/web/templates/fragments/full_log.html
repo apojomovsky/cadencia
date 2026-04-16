@@ -1,0 +1,14 @@
+{% if one_on_ones %}
+{% for oo in one_on_ones %}
+<div class="observation">
+  <div class="obs-meta">{{ oo.scheduled_date }} &middot; 1:1</div>
+  {% if oo.notes %}
+  <div>{{ oo.notes }}</div>
+  {% else %}
+  <div style="color: var(--muted); font-style: italic;">No notes recorded.</div>
+  {% endif %}
+</div>
+{% endfor %}
+{% else %}
+<p class="empty">No 1:1s logged yet.</p>
+{% endif %}
