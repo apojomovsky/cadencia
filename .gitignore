@@ -1,7 +1,8 @@
-# Environment
+# Environment and local config
 .env
 .env.local
 secrets/
+docker-compose.override.yml
 
 # Python
 __pycache__/

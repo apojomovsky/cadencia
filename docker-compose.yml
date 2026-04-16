@@ -6,7 +6,7 @@ services:
     image: cadencia-app:latest
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:${APP_PORT:-8080}:8080"
     volumes:
       - em_data:/data
       - backup_status:/backup-status:ro
@@ -35,7 +35,7 @@ services:
     image: cadencia-mcp:latest
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8081:8081"
+      - "127.0.0.1:${MCP_PORT:-8081}:8081"
     volumes:
       - em_data:/data
     env_file:

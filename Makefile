@@ -3,7 +3,7 @@
 COMPOSE := docker compose
 UV      := uv
 
-.PHONY: help up down restart build dev logs shell test lint lint-fix setup-dev
+.PHONY: help up down restart build dev logs shell test lint lint-fix setup-dev bootstrap
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -44,6 +44,9 @@ lint-fix: ## Run ruff linter with auto-fix
 	ruff check --fix --unsafe-fixes app/src/
 
 # --- Setup ---
+
+bootstrap: ## Interactive setup wizard (writes .env and optional override)
+	@bash scripts/bootstrap.sh
 
 setup-dev: ## Install dev dependencies and git hooks (run once)
 	$(UV) pip install -e "app/[dev]"

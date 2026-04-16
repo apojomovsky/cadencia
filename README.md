@@ -45,15 +45,17 @@ full-team dashboard and per-person detail view for when you want to browse rathe
 
 ## Quick start
 
-### 1. Clone and configure
+### 1. Clone and run the setup wizard
 
 ```bash
 git clone https://github.com/apojomovsky/cadencia.git
 cd cadencia
-cp .env.example .env
+make bootstrap
 ```
 
-Edit `.env` to adjust defaults (backup schedule, staleness thresholds, etc.).
+The wizard asks about database location, backup settings, staleness thresholds, and ports.
+It writes `.env` and, if you choose a custom DB path, `docker-compose.override.yml`.
+Run it again any time to reconfigure. Alternatively, copy `.env.example` to `.env` and edit by hand.
 
 ### 2. Set up rclone for Google Drive backups
 
