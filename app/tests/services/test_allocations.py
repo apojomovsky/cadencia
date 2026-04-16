@@ -1,13 +1,13 @@
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from em_journal.models.allocations import UpdateAllocationInput
-from em_journal.models.people import CreatePersonInput
-from em_journal.services.allocations import (
+from cadencia.models.allocations import UpdateAllocationInput
+from cadencia.models.people import CreatePersonInput
+from cadencia.services.allocations import (
     confirm_allocation,
     get_current_allocation,
     update_allocation,
 )
-from em_journal.services.people import create_person
+from cadencia.services.people import create_person
 
 
 async def test_update_allocation_creates_new(conn: AsyncConnection) -> None:

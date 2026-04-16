@@ -2,11 +2,11 @@ from datetime import date
 
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from em_journal.models.one_on_ones import ActionItemInput, LogOneOnOneInput
-from em_journal.models.people import CreatePersonInput
-from em_journal.services.action_items import get_open_action_items
-from em_journal.services.one_on_ones import log_one_on_one
-from em_journal.services.people import create_person
+from cadencia.models.one_on_ones import ActionItemInput, LogOneOnOneInput
+from cadencia.models.people import CreatePersonInput
+from cadencia.services.action_items import get_open_action_items
+from cadencia.services.one_on_ones import log_one_on_one
+from cadencia.services.people import create_person
 
 
 async def test_log_one_on_one_creates_record(conn: AsyncConnection) -> None:

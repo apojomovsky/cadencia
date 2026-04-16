@@ -1,9 +1,9 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from em_journal.models.people import CreatePersonInput, UpdatePersonInput
-from em_journal.services.exceptions import AmbiguousError, NotFoundError
-from em_journal.services.people import (
+from cadencia.models.people import CreatePersonInput, UpdatePersonInput
+from cadencia.services.exceptions import AmbiguousError, NotFoundError
+from cadencia.services.people import (
     create_person,
     get_person,
     list_people,

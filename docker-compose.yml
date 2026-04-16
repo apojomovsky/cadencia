@@ -3,7 +3,7 @@ services:
     build:
       context: ./app
       dockerfile: Dockerfile
-    image: em-journal-app:latest
+    image: cadencia-app:latest
     restart: unless-stopped
     ports:
       - "127.0.0.1:8080:8080"
@@ -32,7 +32,7 @@ services:
     build:
       context: .
       dockerfile: mcp/Dockerfile
-    image: em-journal-mcp:latest
+    image: cadencia-mcp:latest
     restart: unless-stopped
     ports:
       - "127.0.0.1:8081:8081"
@@ -59,7 +59,7 @@ services:
     build:
       context: ./backup
       dockerfile: Dockerfile
-    image: em-journal-backup:latest
+    image: cadencia-backup:latest
     restart: unless-stopped
     volumes:
       - em_data:/data:ro
@@ -86,11 +86,11 @@ services:
 
 volumes:
   em_data:
-    name: em_journal_data
+    name: cadencia_data
   backup_status:
-    name: em_journal_backup_status
+    name: cadencia_backup_status
 
 networks:
   em_net:
     driver: bridge
-    name: em_journal_net
+    name: cadencia_net

@@ -17,7 +17,7 @@ The full product spec is in `docs/SPEC.md`. Read it before implementing anything
 
 ## Getting started (MCP setup for agents)
 
-The repo root contains `.mcp.json` which points Claude Code at the EM Journal MCP server
+The repo root contains `.mcp.json` which points Claude Code at the Cadencia MCP server
 (`http://localhost:8081/sse`). For the tools to work, the stack must be running:
 
 ```bash
@@ -53,7 +53,7 @@ any tool calls. The `.mcp.json` is already wired; no manual Claude Code config i
 5. **Every write to the database must be logged.** See SPEC.md section 4.4 for the audit
    convention. If you add a new write path and do not add a log call, the implementation is wrong.
 
-6. **The service layer (`app/src/em_journal/services/`) is the boundary.** API routes call
+6. **The service layer (`app/src/cadencia/services/`) is the boundary.** API routes call
    services. The MCP server calls services. Nothing else touches the database directly. If you
    find yourself importing the DB module from outside `services/`, stop and refactor.
 

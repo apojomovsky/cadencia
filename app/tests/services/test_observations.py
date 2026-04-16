@@ -1,9 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from em_journal.models.observations import AddObservationInput
-from em_journal.models.people import CreatePersonInput
-from em_journal.services.observations import add_observation, list_observations
-from em_journal.services.people import create_person
+from cadencia.models.observations import AddObservationInput
+from cadencia.models.people import CreatePersonInput
+from cadencia.services.observations import add_observation, list_observations
+from cadencia.services.people import create_person
 
 
 async def test_add_and_list_observation(conn: AsyncConnection) -> None:

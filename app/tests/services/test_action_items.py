@@ -1,14 +1,14 @@
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from em_journal.models.action_items import CreateActionItemInput
-from em_journal.models.people import CreatePersonInput
-from em_journal.services.action_items import (
+from cadencia.models.action_items import CreateActionItemInput
+from cadencia.models.people import CreatePersonInput
+from cadencia.services.action_items import (
     complete_action_item,
     create_action_item,
     get_open_action_items,
 )
-from em_journal.services.exceptions import NotFoundError
-from em_journal.services.people import create_person
+from cadencia.services.exceptions import NotFoundError
+from cadencia.services.people import create_person
 import pytest
 
 

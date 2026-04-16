@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# EM Journal restore script.
+# Cadencia restore script.
 # Restores the database from a Google Drive backup.
 #
 # Usage (run from repo root):
 #   ./scripts/restore.sh                                     # lists backups, prompts
-#   ./scripts/restore.sh em-journal-20260415-030013.db.gz   # restore specific file
+#   ./scripts/restore.sh cadencia-20260415-030013.db.gz   # restore specific file
 
 set -euo pipefail
 
 RCLONE_REMOTE="${RCLONE_REMOTE:-gdrive}"
-BACKUP_DEST_PATH="${BACKUP_PATH:-em-journal-backups}"
+BACKUP_DEST_PATH="${BACKUP_PATH:-cadencia-backups}"
 RCLONE_CONFIG_FILE="${RCLONE_CONFIG:-./secrets/rclone.conf}"
-VOLUME_NAME="em_journal_data"
+VOLUME_NAME="cadencia_data"
 
 log() { echo "==> $*"; }
 die() { echo "ERROR: $*" >&2; exit 1; }
@@ -26,7 +26,7 @@ if [[ -z "$BACKUP_FILE" ]]; then
     log "Available backups in ${RCLONE_REMOTE}:${BACKUP_DEST_PATH}/ (newest first):"
     echo ""
     rclone --config="$RCLONE_CONFIG_FILE" lsf "${RCLONE_REMOTE}:${BACKUP_DEST_PATH}/" \
-        | grep -E '^em-journal-.*\.db\.gz$' \
+        | grep -E '^cadencia-.*\.db\.gz$' \
         | sort -r \
         | head -20
     echo ""

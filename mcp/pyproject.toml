@@ -1,7 +1,7 @@
 [project]
-name = "em-journal-mcp"
+name = "cadencia-mcp"
 version = "0.1.0"
-description = "MCP server for EM Journal"
+description = "MCP server for Cadencia"
 requires-python = ">=3.12"
 dependencies = [
     "mcp>=1.0.0",
@@ -14,7 +14,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/em_journal_mcp"]
+packages = ["src/cadencia_mcp"]
 
 [tool.ruff]
 target-version = "py312"
@@ -23,7 +23,7 @@ line-length = 100
 [tool.mypy]
 python_version = "3.12"
 strict = true
-files = ["src/em_journal_mcp"]
+files = ["src/cadencia_mcp"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

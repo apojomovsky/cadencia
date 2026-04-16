@@ -25,9 +25,9 @@ See `AGENTS.md` section "Commit workflow" for the full convention.
 
 ## Phase 1: Database layer
 
-- [x] `app/src/em_journal/db/sql/001_initial_schema.sql`: all five tables with CHECK constraints
-- [x] `app/src/em_journal/db/connection.py`: SQLAlchemy Core engine, WAL mode enabled, foreign keys on
-- [x] `app/src/em_journal/db/migrations.py`: migration runner with `_migrations` table, idempotent
+- [x] `app/src/cadencia/db/sql/001_initial_schema.sql`: all five tables with CHECK constraints
+- [x] `app/src/cadencia/db/connection.py`: SQLAlchemy Core engine, WAL mode enabled, foreign keys on
+- [x] `app/src/cadencia/db/migrations.py`: migration runner with `_migrations` table, idempotent
 - [x] Migration runs cleanly on fresh volume and is a no-op on subsequent restarts
 
 **Verify**: `docker compose up`, connect to app container, confirm all tables exist and `_migrations` shows `001_initial_schema` applied.
@@ -91,7 +91,7 @@ See `AGENTS.md` section "Commit workflow" for the full convention.
 
 ## Phase 6: MCP server
 
-- [x] `mcp/src/em_journal_mcp/server.py`: MCP server with HTTP/SSE transport on port 8081
+- [x] `mcp/src/cadencia_mcp/server.py`: MCP server with HTTP/SSE transport on port 8081
 - [x] Tool: `list_people`
 - [x] Tool: `get_person` (including `Ambiguous` error for partial name matches)
 - [x] Tool: `add_observation`

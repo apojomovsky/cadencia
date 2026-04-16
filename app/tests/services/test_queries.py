@@ -2,15 +2,15 @@ from datetime import date, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from em_journal.models.allocations import UpdateAllocationInput
-from em_journal.models.observations import AddObservationInput
-from em_journal.models.one_on_ones import LogOneOnOneInput
-from em_journal.models.people import CreatePersonInput
-from em_journal.services.allocations import update_allocation
-from em_journal.services.observations import add_observation
-from em_journal.services.one_on_ones import log_one_on_one
-from em_journal.services.people import create_person
-from em_journal.services.queries import (
+from cadencia.models.allocations import UpdateAllocationInput
+from cadencia.models.observations import AddObservationInput
+from cadencia.models.one_on_ones import LogOneOnOneInput
+from cadencia.models.people import CreatePersonInput
+from cadencia.services.allocations import update_allocation
+from cadencia.services.observations import add_observation
+from cadencia.services.one_on_ones import log_one_on_one
+from cadencia.services.people import create_person
+from cadencia.services.queries import (
     get_person_overview,
     prepare_one_on_one,
     whats_stale,
@@ -41,8 +41,8 @@ async def test_whats_stale_no_overdue_after_recent_one_on_one(
 
 async def test_whats_stale_overdue_action_items(conn: AsyncConnection) -> None:
     person = await create_person(conn, CreatePersonInput(name="Paula"))
-    from em_journal.models.action_items import CreateActionItemInput
-    from em_journal.services.action_items import create_action_item
+    from cadencia.models.action_items import CreateActionItemInput
+    from cadencia.services.action_items import create_action_item
 
     past_date = date.today() - timedelta(days=5)
     await create_action_item(

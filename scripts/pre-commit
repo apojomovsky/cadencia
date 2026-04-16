@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Git pre-commit hook: runs ruff on Python source before every commit.
+# Install via: make setup-dev  (or bash scripts/setup-dev.sh)
+set -euo pipefail
+
+if ! git diff --cached --name-only | grep -q '\.py$'; then
+    exit 0
+fi
+
+if ! command -v ruff >/dev/null 2>&1; then
+    echo "ruff not found. Run 'make setup-dev' to install dev dependencies."
+    exit 1
+fi
+
+echo "==> ruff check app/src/"
+ruff check app/src/ || {
+    echo ""
+    echo "Lint errors found. Run 'make lint-fix' to auto-fix, then re-stage."
+    exit 1
+}

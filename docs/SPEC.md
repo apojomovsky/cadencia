@@ -1,4 +1,4 @@
-# EM Journal: v1 Implementation Spec
+# Cadencia: v1 Implementation Spec
 
 > **For AI agents**: Read `AGENTS.md` at the repo root before reading this file.
 > This spec is the source of truth for what to build. If code and spec disagree, one is wrong.
@@ -8,7 +8,7 @@
 
 ## 0. How to Use This Document
 
-This is the complete implementation brief for EM Journal v1. It contains every product,
+This is the complete implementation brief for Cadencia v1. It contains every product,
 architecture, schema, and convention decision made during the design phase. It contains no code.
 
 **Agents**: Pull the section(s) relevant to your task into context. You do not need to load the
@@ -162,7 +162,7 @@ next request -> backup status shown in UI.
 ### 2.4 Repository layout
 
 ```
-em-journal/
+cadencia/
   AGENTS.md              # agent meta-guidance (you are here)
   docker-compose.yml     # base compose file
   docker-compose.dev.yml # dev overlay (bind mounts for hot reload, exposed debug ports)
@@ -178,7 +178,7 @@ em-journal/
     Dockerfile           # multi-stage, non-root
     pyproject.toml
     src/
-      em_journal/
+      cadencia/
         api/             # FastAPI route handlers (thin, delegate to services)
         models/          # Pydantic models for API and MCP schemas
         services/        # business logic (the only layer that touches the DB)
@@ -189,8 +189,8 @@ em-journal/
     Dockerfile
     pyproject.toml
     src/
-      em_journal_mcp/
-        server.py        # MCP server, imports from em_journal.services via HTTP or direct
+      cadencia_mcp/
+        server.py        # MCP server, imports from cadencia.services via HTTP or direct
     tests/
   dolt/                  # misnamed legacy: actually just SQL init files for SQLite
     init/
@@ -305,7 +305,7 @@ CREATE TABLE allocations (
 Migrations are plain SQL files in `dolt/init/` (or `db/init/`), numbered sequentially:
 `001_initial_schema.sql`, `002_add_something.sql`, etc.
 
-A simple migration runner in `app/src/em_journal/db/migrations.py` tracks applied migrations
+A simple migration runner in `app/src/cadencia/db/migrations.py` tracks applied migrations
 in a `_migrations` table and applies unapplied ones on app startup. The runner must be
 idempotent: running it twice produces the same result as running it once.
 
@@ -326,13 +326,13 @@ Do not use Alembic. See AGENTS.md for the rationale.
 
 ### 4.1 Design contract
 
-`app/src/em_journal/services/` contains the only code that reads from or writes to the database.
+`app/src/cadencia/services/` contains the only code that reads from or writes to the database.
 No other module imports from `db/` directly. This is enforced by convention, not by the
 language. Agents: if you find yourself writing a DB query outside of `services/`, stop.
 
 Services are async Python functions. They accept typed Pydantic models as input and return typed
 Pydantic models as output. They raise typed exceptions (defined in
-`em_journal/services/exceptions.py`) which the API and MCP layers catch and translate into
+`cadencia/services/exceptions.py`) which the API and MCP layers catch and translate into
 appropriate error responses.
 
 ### 4.2 Service modules
@@ -410,7 +410,7 @@ set `source="mcp"`). Do not infer it inside the service.
 HTTP/SSE transport. The MCP server runs in its own container on port 8081. Claude Desktop
 connects to `http://localhost:8081/sse`.
 
-The MCP server imports service functions from the `em_journal` package (shared via docker volume
+The MCP server imports service functions from the `cadencia` package (shared via docker volume
 mount in dev, or by installing the package from the app wheel in prod). It does not call the
 FastAPI HTTP API. Both the MCP server and the FastAPI app share the same service layer code.
 
@@ -637,7 +637,7 @@ No other pages in v1. Navigation is: list -> detail -> back to list. That's it.
 ### 6.2 People list page (`/`)
 
 ```
-EM Journal                                  [last backup: 2 hours ago]
+Cadencia                                  [last backup: 2 hours ago]
 -----------------------------------------------------------------
 People                                               [+ Add person]
 
@@ -733,16 +733,16 @@ sqlite3 /data/em.db ".backup /tmp/backup.db"
 
 This produces a consistent snapshot even under concurrent reads.
 
-After backup: `gzip /tmp/backup.db` -> `em-journal-YYYY-MM-DD-HHMMSS.db.gz`.
+After backup: `gzip /tmp/backup.db` -> `cadencia-YYYY-MM-DD-HHMMSS.db.gz`.
 
 ### 7.3 rclone configuration
 
 Remote name: configured via `RCLONE_REMOTE` env var (default: `gdrive`).
-Destination path: configured via `BACKUP_PATH` env var (default: `em-journal-backups`).
+Destination path: configured via `BACKUP_PATH` env var (default: `cadencia-backups`).
 
 Full upload command:
 ```bash
-rclone copy /tmp/em-journal-${TIMESTAMP}.db.gz "${RCLONE_REMOTE}:${BACKUP_PATH}/"
+rclone copy /tmp/cadencia-${TIMESTAMP}.db.gz "${RCLONE_REMOTE}:${BACKUP_PATH}/"
 ```
 
 **First-time setup (manual, one-time)**: Run `rclone config` on the host to create the Google
@@ -766,7 +766,7 @@ Implement retention as a shell function in the backup script. Do not use a third
 
 After each run, the backup script writes a JSON sentinel file:
 ```bash
-echo '{"success": true, "ts": "2026-04-15T03:01:23Z", "file": "em-journal-...db.gz"}' \
+echo '{"success": true, "ts": "2026-04-15T03:01:23Z", "file": "cadencia-...db.gz"}' \
   > /backup-status/last.json
 ```
 
@@ -780,11 +780,11 @@ against the current time at render.
 
 Documented in README.md. Summary:
 1. `docker compose down`
-2. `rclone ls gdrive:em-journal-backups/` to list available backups.
-3. `rclone copy gdrive:em-journal-backups/em-journal-TIMESTAMP.db.gz /tmp/`
-4. `gunzip /tmp/em-journal-TIMESTAMP.db.gz`
-5. `docker volume create em_journal_data` (if not exists)
-6. Copy file into volume: `docker run --rm -v em_journal_data:/data -v /tmp:/tmp alpine cp /tmp/em-journal-TIMESTAMP.db /data/em.db`
+2. `rclone ls gdrive:cadencia-backups/` to list available backups.
+3. `rclone copy gdrive:cadencia-backups/cadencia-TIMESTAMP.db.gz /tmp/`
+4. `gunzip /tmp/cadencia-TIMESTAMP.db.gz`
+5. `docker volume create cadencia_data` (if not exists)
+6. Copy file into volume: `docker run --rm -v cadencia_data:/data -v /tmp:/tmp alpine cp /tmp/cadencia-TIMESTAMP.db /data/em.db`
 7. `docker compose up`
 
 The `scripts/restore.sh` script implements these steps with prompts for confirmation.
@@ -796,7 +796,7 @@ The `scripts/restore.sh` script implements these steps with prompts for confirma
 ### 8.1 Container topology
 
 Three containers, as described in section 2.1. Container names in compose: `app`, `mcp`, `backup`.
-Internal network: `em_journal_net` (bridge). Only `app` and `mcp` are on it.
+Internal network: `cadencia_net` (bridge). Only `app` and `mcp` are on it.
 
 Published ports (dev): `app:8080`, `mcp:8081`. In production mode (home server), bind to
 Tailscale interface instead of `0.0.0.0`.
@@ -828,11 +828,11 @@ services:
   app:
     volumes:
       - ./app/src:/app/src  # hot reload
-    command: uvicorn em_journal.main:app --reload --host 0.0.0.0 --port 8080
+    command: uvicorn cadencia.main:app --reload --host 0.0.0.0 --port 8080
   mcp:
     volumes:
       - ./mcp/src:/app/src
-      - ./app/src:/em_journal_src  # shared service code
+      - ./app/src:/cadencia_src  # shared service code
 ```
 
 Run in dev: `docker compose -f docker-compose.yml -f docker-compose.dev.yml up`
@@ -846,7 +846,7 @@ All required vars documented in `.env.example`. Never committed in `.env`.
 # .env.example
 OWNER_ID=default                   # logical owner for multi-user future
 BACKUP_REMOTE=gdrive               # rclone remote name
-BACKUP_PATH=em-journal-backups     # path within remote
+BACKUP_PATH=cadencia-backups     # path within remote
 BACKUP_HOUR=3                      # hour (local time) to run daily backup
 ALLOCATION_STALE_DAYS=45           # threshold for stale allocation warning
 ONE_ON_ONE_STALE_DAYS=14           # threshold for overdue 1:1 warning
@@ -885,10 +885,10 @@ indicator of overall system health.
 - `pytest` with `pytest-asyncio` for tests.
 - `uv` preferred over `pip` for package management inside containers.
 
-### 9.2 Module structure within `em_journal`
+### 9.2 Module structure within `cadencia`
 
 ```
-em_journal/
+cadencia/
   __init__.py
   main.py           # FastAPI app factory
   config.py         # Pydantic Settings (reads .env)

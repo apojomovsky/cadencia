@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# EM Journal backup script.
+# Cadencia backup script.
 # Runs on startup (writes sentinel immediately) then loops daily at BACKUP_HOUR.
 # Skips rclone upload if config is missing (safe for development).
 
@@ -8,7 +8,7 @@ set -euo pipefail
 SENTINEL="${BACKUP_STATUS_PATH:-/backup-status/last.json}"
 DB_PATH="${DB_PATH:-/data/em.db}"
 RCLONE_REMOTE="${RCLONE_REMOTE:-gdrive}"
-BACKUP_DEST_PATH="${BACKUP_PATH:-em-journal-backups}"
+BACKUP_DEST_PATH="${BACKUP_PATH:-cadencia-backups}"
 BACKUP_HOUR="${BACKUP_HOUR:-3}"
 RCLONE_CONFIG_FILE="${RCLONE_CONFIG:-/secrets/rclone.conf}"
 
@@ -49,7 +49,7 @@ apply_retention() {
 
     local files
     files=$(rclone --config="$RCLONE_CONFIG_FILE" lsf "${RCLONE_REMOTE}:${BACKUP_DEST_PATH}/" 2>/dev/null \
-        | grep -E '^em-journal-[0-9]{8}-[0-9]{6}\.db\.gz$' \
+        | grep -E '^cadencia-[0-9]{8}-[0-9]{6}\.db\.gz$' \
         | sort) || true
 
     if [[ -z "$files" ]]; then
@@ -61,7 +61,7 @@ apply_retention() {
 
     while IFS= read -r fname; do
         local datepart
-        datepart=$(echo "$fname" | sed 's/em-journal-\([0-9]\{8\}\)-.*/\1/')
+        datepart=$(echo "$fname" | sed 's/cadencia-\([0-9]\{8\}\)-.*/\1/')
         local y="${datepart:0:4}" m="${datepart:4:2}" d="${datepart:6:2}"
 
         local file_epoch
@@ -105,8 +105,8 @@ run_backup() {
     local ts
     ts="$(date -u +%Y%m%d-%H%M%S)"
     local tmp_db="/tmp/em-backup-${ts}.db"
-    local gz_file="/tmp/em-journal-${ts}.db.gz"
-    local dest_name="em-journal-${ts}.db.gz"
+    local gz_file="/tmp/cadencia-${ts}.db.gz"
+    local dest_name="cadencia-${ts}.db.gz"
 
     log "Starting backup..."
 

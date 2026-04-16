@@ -15,7 +15,7 @@ services:
       LOG_LEVEL: DEBUG
     command:
       - uvicorn
-      - em_journal.main:app
+      - cadencia.main:app
       - --host
       - "0.0.0.0"
       - --port
@@ -33,7 +33,7 @@ services:
       LOG_LEVEL: DEBUG
     command:
       - uvicorn
-      - em_journal_mcp.server:app
+      - cadencia_mcp.server:app
       - --host
       - "0.0.0.0"
       - --port

@@ -5,16 +5,16 @@
 FROM python:3.12.3-slim-bookworm AS builder
 WORKDIR /build
 
-RUN pip install --no-cache-dir uv
+COPY --from=ghcr.io/astral-sh/uv:0.5.25 /uv /bin/uv
 
-# Install the em_journal package (shared service layer)
-COPY app/pyproject.toml /tmp/em_journal/pyproject.toml
-COPY app/src/ /tmp/em_journal/src/
-RUN uv pip install --system --no-cache /tmp/em_journal
+# Install the cadencia package (shared service layer)
+COPY app/pyproject.toml /tmp/cadencia/pyproject.toml
+COPY app/src/ /tmp/cadencia/src/
+RUN uv pip install --system --no-cache /tmp/cadencia
 
 # Install mcp package and its dependencies
 COPY mcp/pyproject.toml ./
-RUN mkdir -p src/em_journal_mcp && touch src/em_journal_mcp/__init__.py
+RUN mkdir -p src/cadencia_mcp && touch src/cadencia_mcp/__init__.py
 RUN uv pip install --system --no-cache .
 
 COPY mcp/src/ ./src/
@@ -33,4 +33,4 @@ RUN mkdir -p /data && chown app:app /data
 
 USER app
 EXPOSE 8081
-CMD ["uvicorn", "em_journal_mcp.server:app", "--host", "0.0.0.0", "--port", "8081"]
+CMD ["uvicorn", "cadencia_mcp.server:app", "--host", "0.0.0.0", "--port", "8081"]

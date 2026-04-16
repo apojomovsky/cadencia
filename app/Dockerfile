@@ -2,11 +2,11 @@
 FROM python:3.12.3-slim-bookworm AS builder
 WORKDIR /build
 
-RUN pip install --no-cache-dir uv
+COPY --from=ghcr.io/astral-sh/uv:0.5.25 /uv /bin/uv
 
 COPY pyproject.toml ./
 # Minimal package stub so uv can resolve the package itself
-RUN mkdir -p src/em_journal && touch src/em_journal/__init__.py
+RUN mkdir -p src/cadencia && touch src/cadencia/__init__.py
 RUN uv pip install --system --no-cache ".[dev]"
 
 # Install source properly now that deps are cached
@@ -32,4 +32,4 @@ COPY tests/ ./tests/
 
 USER app
 EXPOSE 8080
-CMD ["uvicorn", "em_journal.main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "cadencia.main:app", "--host", "0.0.0.0", "--port", "8080"]

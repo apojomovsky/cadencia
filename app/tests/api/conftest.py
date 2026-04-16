@@ -5,9 +5,9 @@ from httpx import AsyncClient, ASGITransport
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from em_journal.db.migrations import run_migrations
-from em_journal.main import app
-import em_journal.db.connection as db_module
+from cadencia.db.migrations import run_migrations
+from cadencia.main import app
+import cadencia.db.connection as db_module
 
 
 @pytest_asyncio.fixture

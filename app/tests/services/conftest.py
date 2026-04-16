@@ -8,7 +8,7 @@ import pytest_asyncio
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from em_journal.db.migrations import run_migrations
+from cadencia.db.migrations import run_migrations
 
 
 @pytest_asyncio.fixture
