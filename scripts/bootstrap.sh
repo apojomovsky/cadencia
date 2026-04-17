@@ -197,5 +197,6 @@ EOF
 
 printf "${G}docker-compose.override.yml written.${N}\n"
 mkdir -p "$DATA_DIR/context"
+mkdir -p "$REPO_ROOT/secrets"
 printf "Database: ${B}%s/em.db${N}\n" "$DATA_DIR"
 printf "\n${G}Done.${N} Run ${B}make up${N} to start.\n\n"
