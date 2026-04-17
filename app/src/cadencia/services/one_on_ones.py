@@ -123,6 +123,26 @@ async def get_upcoming_one_on_ones(
     ]
 
 
+async def list_one_on_ones(
+    conn: AsyncConnection,
+    person_id: str,
+    owner_id: str = "default",
+    limit: int = 20,
+) -> list[OneOnOne]:
+    """Return completed 1:1s for a person, newest first."""
+    await get_person(conn, person_id, owner_id)
+    result = await conn.execute(
+        text(
+            "SELECT * FROM one_on_ones"
+            " WHERE person_id = :pid AND owner_id = :owner AND completed = 1"
+            " ORDER BY scheduled_date DESC"
+            " LIMIT :limit"
+        ),
+        {"pid": person_id, "owner": owner_id, "limit": limit},
+    )
+    return [_row_to_one_on_one(r) for r in result.fetchall()]
+
+
 async def get_last_one_on_one(
     conn: AsyncConnection,
     person_id: str,
