@@ -4,9 +4,8 @@ description: >
   A specialized agent for managing team members, 1:1 meetings, allocations, 
   and stakeholder feedback. Use this to list people, log meetings, record 
   observations, and track project assignments.
-mcpServers:
-  cadencia:
-    url: http://localhost:8081/sse
+tools:
+  - mcp_cadencia_*
 ---
 
 # Cadencia Agent Instructions
