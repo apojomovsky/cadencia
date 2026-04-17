@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}People | Cadencia{% endblock %}
+{% block nav_people %}active{% endblock %}
 
 {% block content %}
 <div class="list-header">
@@ -28,14 +29,24 @@
   {% endif %}
   {# Compute numeric level from seniority string like "L5" #}
   {% set level_num = (person.seniority or "L0")[1:] | int(default=0) %}
+  {# Compute initials and avatar color index from name length #}
+  {% set _parts = person.name.split() %}
+  {% if _parts | length >= 2 %}
+    {% set _initials = (_parts[0][0] ~ _parts[1][0]) | upper %}
+  {% else %}
+    {% set _initials = person.name[:2] | upper %}
+  {% endif %}
+  {% set _av_idx = (person.name | length) % 6 %}
   <a class="person-row"
      href="/people/{{ person.id }}"
      data-name="{{ person.name | lower }}"
      data-level="{{ level_num }}"
      data-alloc="{{ alloc_key }}">
-    <span class="person-name">{{ person.name }}</span>
-    <span class="person-role">{{ person.role or "" }}</span>
-    <span class="person-band">{{ person.seniority or "" }}</span>
+    <div class="avatar av-{{ _av_idx }}">{{ _initials }}</div>
+    <div class="person-info">
+      <div class="person-name">{{ person.name }}</div>
+      <div class="person-role">{{ person.role or "" }}{% if person.seniority %} &middot; {{ person.seniority }}{% endif %}</div>
+    </div>
 
     {# Allocation badge #}
     {% if person.alloc_stale_days is not none %}
@@ -43,7 +54,7 @@
     {% elif person.current_allocation_type == "bench" %}
       <span class="badge muted">BENCH</span>
     {% elif person.current_allocation_label %}
-      <span class="badge">{{ person.current_allocation_label }}</span>
+      <span class="badge alloc">{{ person.current_allocation_label }}</span>
     {% else %}
       <span class="badge muted">no alloc</span>
     {% endif %}
@@ -54,7 +65,7 @@
     {% elif person.one_on_one_overdue %}
       <span class="badge danger">1:1 OVERDUE</span>
     {% elif person.one_on_one_days_until is not none %}
-      <span class="badge">1:1 in {{ person.one_on_one_days_until }}d</span>
+      <span class="badge ok">1:1 in {{ person.one_on_one_days_until }}d</span>
     {% else %}
       <span class="badge muted">1:1 {{ person.one_on_one_days_ago }}d ago</span>
     {% endif %}
