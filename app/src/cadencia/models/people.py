@@ -11,6 +11,7 @@ class PersonSummary(BaseModel):
     seniority: str | None
     status: Literal["active", "leaving", "left"]
     current_allocation_type: Literal["client", "internal", "bench"] | None
+    current_allocation_percent: int | None
     current_allocation_confirmed_date: date | None
     current_allocation_label: str | None
     last_one_on_one_date: date | None

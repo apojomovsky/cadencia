@@ -64,7 +64,7 @@ async def list_people(
         # Current allocation
         alloc_result = await conn.execute(
             text(
-                "SELECT type, client_or_project, last_confirmed_date"
+                "SELECT type, client_or_project, last_confirmed_date, percent"
                 " FROM allocations WHERE person_id = :pid AND end_date IS NULL"
                 " LIMIT 1"
             ),
@@ -72,11 +72,13 @@ async def list_people(
         )
         alloc_row = alloc_result.fetchone()
         alloc_type = None
+        alloc_percent = None
         alloc_confirmed = None
         alloc_label = None
         if alloc_row:
             ar = dict(alloc_row._mapping)
             alloc_type = ar["type"]
+            alloc_percent = ar.get("percent")
             alloc_confirmed = ar["last_confirmed_date"]
             if ar["client_or_project"]:
                 alloc_label = ar["client_or_project"]
@@ -138,6 +140,7 @@ async def list_people(
                 seniority=r["seniority"],
                 status=r["status"],
                 current_allocation_type=alloc_type,
+                current_allocation_percent=alloc_percent,
                 current_allocation_confirmed_date=alloc_confirmed,
                 current_allocation_label=alloc_label,
                 last_one_on_one_date=oo_row[0] if oo_row else None,
@@ -198,6 +201,7 @@ async def resolve_person(
             seniority=r["seniority"],
             status=r["status"],
             current_allocation_type=None,
+            current_allocation_percent=None,
             current_allocation_confirmed_date=None,
             current_allocation_label=None,
             last_one_on_one_date=None,

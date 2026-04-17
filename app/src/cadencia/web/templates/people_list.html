@@ -7,9 +7,32 @@
   <a href="/people/new" class="btn btn-primary">+ Add person</a>
 </div>
 
-<div class="people-list">
+<div class="sort-controls">
+  <span class="sort-label">Sort:</span>
+  <button class="sort-btn active" data-sort="name">Name</button>
+  <button class="sort-btn" data-sort="level">Level</button>
+  <button class="sort-btn" data-sort="alloc">Allocation</button>
+</div>
+
+<div class="people-list" id="people-list">
   {% for person in people %}
-  <a class="person-row" href="/people/{{ person.id }}">
+  {# Compute alloc sort key: 0=no alloc, 1=bench, 2=partial, 3=full #}
+  {% if person.current_allocation_type is none %}
+    {% set alloc_key = 0 %}
+  {% elif person.current_allocation_type == "bench" %}
+    {% set alloc_key = 1 %}
+  {% elif person.current_allocation_percent is not none and person.current_allocation_percent < 100 %}
+    {% set alloc_key = 2 %}
+  {% else %}
+    {% set alloc_key = 3 %}
+  {% endif %}
+  {# Compute numeric level from seniority string like "L5" #}
+  {% set level_num = (person.seniority or "L0")[1:] | int(default=0) %}
+  <a class="person-row"
+     href="/people/{{ person.id }}"
+     data-name="{{ person.name | lower }}"
+     data-level="{{ level_num }}"
+     data-alloc="{{ alloc_key }}">
     <span class="person-name">{{ person.name }}</span>
     <span class="person-role">{{ person.role or "" }}</span>
     <span class="person-band">{{ person.seniority or "" }}</span>
@@ -47,4 +70,40 @@
   <p class="empty">No active people yet. <a href="/people/new">Add the first one.</a></p>
   {% endfor %}
 </div>
+
+<script>
+(function () {
+  const list = document.getElementById('people-list');
+  let currentSort = 'name';
+  let currentDir = 1;
+
+  function sortRows(key, dir) {
+    const rows = Array.from(list.querySelectorAll('.person-row'));
+    rows.sort((a, b) => {
+      const av = a.dataset[key];
+      const bv = b.dataset[key];
+      const an = parseFloat(av);
+      const bn = parseFloat(bv);
+      if (!isNaN(an) && !isNaN(bn)) return dir * (an - bn);
+      return dir * av.localeCompare(bv);
+    });
+    rows.forEach(r => list.appendChild(r));
+  }
+
+  document.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.sort;
+      if (key === currentSort) {
+        currentDir *= -1;
+      } else {
+        currentSort = key;
+        currentDir = key === 'alloc' ? -1 : 1;
+      }
+      document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      sortRows(currentSort, currentDir);
+    });
+  });
+})();
+</script>
 {% endblock %}

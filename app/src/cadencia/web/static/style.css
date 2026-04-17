@@ -62,7 +62,29 @@ a:hover { text-decoration: underline; }
 .container { max-width: 960px; margin: 0 auto; padding: 24px; }
 
 /* People list */
-.people-list { margin-top: 16px; }
+.sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.sort-label { font-size: 13px; color: var(--muted); }
+
+.sort-btn {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.sort-btn:hover { border-color: var(--accent); color: var(--accent); }
+.sort-btn.active { border-color: var(--accent); color: var(--accent); background: var(--surface); }
+
+.people-list { margin-top: 0; }
 
 .person-row {
   display: flex;
