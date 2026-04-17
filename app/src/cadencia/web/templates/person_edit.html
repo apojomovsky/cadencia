@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ person.name }} | Cadencia{% endblock %}
+
+{% block content %}
+<a class="back-link" href="/people/{{ person.id }}">&larr; {{ person.name }}</a>
+<h2 style="margin-bottom: 24px;">Edit {{ person.name }}</h2>
+
+<form class="person-form" method="post" action="/people/{{ person.id }}/edit">
+  <div class="field">
+    <label for="name">Name *</label>
+    <input id="name" type="text" name="name" required value="{{ person.name }}">
+  </div>
+  <div class="field">
+    <label for="role">Role</label>
+    <input id="role" type="text" name="role" value="{{ person.role or '' }}">
+  </div>
+  <div class="field">
+    <label for="seniority">Seniority</label>
+    <select id="seniority" name="seniority">
+      <option value="" {% if not person.seniority %}selected{% endif %}>Not set</option>
+      <option value="P1" {% if person.seniority == "P1" %}selected{% endif %}>P1</option>
+      <option value="P2" {% if person.seniority == "P2" %}selected{% endif %}>P2</option>
+      <option value="P3" {% if person.seniority == "P3" %}selected{% endif %}>P3</option>
+    </select>
+  </div>
+  <div class="field">
+    <label for="start_date">Start date</label>
+    <input id="start_date" type="date" name="start_date"
+      value="{{ person.start_date.isoformat() if person.start_date else '' }}">
+  </div>
+  <div class="field">
+    <label for="status">Status</label>
+    <select id="status" name="status">
+      <option value="active" {% if person.status == "active" %}selected{% endif %}>Active</option>
+      <option value="leaving" {% if person.status == "leaving" %}selected{% endif %}>Leaving</option>
+      <option value="left" {% if person.status == "left" %}selected{% endif %}>Left</option>
+    </select>
+  </div>
+
+  <details class="advanced-details" {% if person.recurrence_weekday is not none %}open{% endif %}>
+    <summary>Advanced options</summary>
+    <div class="advanced-fields">
+      <div class="field">
+        <label for="recurrence_weekday">Recurrence weekday</label>
+        <select id="recurrence_weekday" name="recurrence_weekday">
+          <option value="" {% if person.recurrence_weekday is none %}selected{% endif %}>Not set</option>
+          <option value="0" {% if person.recurrence_weekday == 0 %}selected{% endif %}>Monday</option>
+          <option value="1" {% if person.recurrence_weekday == 1 %}selected{% endif %}>Tuesday</option>
+          <option value="2" {% if person.recurrence_weekday == 2 %}selected{% endif %}>Wednesday</option>
+          <option value="3" {% if person.recurrence_weekday == 3 %}selected{% endif %}>Thursday</option>
+          <option value="4" {% if person.recurrence_weekday == 4 %}selected{% endif %}>Friday</option>
+          <option value="5" {% if person.recurrence_weekday == 5 %}selected{% endif %}>Saturday</option>
+          <option value="6" {% if person.recurrence_weekday == 6 %}selected{% endif %}>Sunday</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="recurrence_week_of_month">Week of month</label>
+        <select id="recurrence_week_of_month" name="recurrence_week_of_month">
+          <option value="" {% if person.recurrence_week_of_month is none %}selected{% endif %}>Not set (every N days)</option>
+          <option value="1" {% if person.recurrence_week_of_month == 1 %}selected{% endif %}>1st</option>
+          <option value="2" {% if person.recurrence_week_of_month == 2 %}selected{% endif %}>2nd</option>
+          <option value="3" {% if person.recurrence_week_of_month == 3 %}selected{% endif %}>3rd</option>
+          <option value="4" {% if person.recurrence_week_of_month == 4 %}selected{% endif %}>4th</option>
+          <option value="-1" {% if person.recurrence_week_of_month == -1 %}selected{% endif %}>Last</option>
+        </select>
+      </div>
+    </div>
+  </details>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Save changes</button>
+    <a href="/people/{{ person.id }}" class="btn">Cancel</a>
+  </div>
+</form>
+
+<div class="danger-zone">
+  <div class="section-header">Danger Zone</div>
+  <div class="section-body">
+    <p style="font-size:13px; color:var(--muted); margin-bottom:12px;">
+      Archiving marks this person as <strong>left</strong> and removes them from the active list.
+      All their data is preserved.
+    </p>
+    <form method="post" action="/people/{{ person.id }}/archive"
+      onsubmit="return confirm('Archive {{ person.name }}? They will be removed from the active list.')">
+      <button type="submit" class="btn btn-danger">Archive {{ person.name }}</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

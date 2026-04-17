@@ -6,6 +6,7 @@
 
 <div class="person-header">
   <h2>{{ overview.name }}</h2>
+  <a href="/people/{{ overview.person_id }}/edit" class="edit-btn" style="font-size:13px; margin-left:4px;">edit</a>
   <span class="meta">
     {% if overview.role %}{{ overview.role }}{% endif %}
     {% if overview.seniority %}&nbsp;&middot;&nbsp;{{ overview.seniority }}{% endif %}

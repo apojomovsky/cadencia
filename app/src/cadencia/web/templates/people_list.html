@@ -2,6 +2,11 @@
 {% block title %}People | Cadencia{% endblock %}
 
 {% block content %}
+<div class="list-header">
+  <h2>People</h2>
+  <a href="/people/new" class="btn btn-primary">+ Add person</a>
+</div>
+
 <div class="people-list">
   {% for person in people %}
   <a class="person-row" href="/people/{{ person.id }}">
@@ -39,7 +44,7 @@
     {% endif %}
   </a>
   {% else %}
-  <p class="empty">No active people yet. Add someone via MCP.</p>
+  <p class="empty">No active people yet. <a href="/people/new">Add the first one.</a></p>
   {% endfor %}
 </div>
 {% endblock %}

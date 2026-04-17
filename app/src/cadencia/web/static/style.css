@@ -196,6 +196,114 @@ a:hover { text-decoration: underline; }
 .back-link { font-size: 14px; margin-bottom: 16px; display: block; }
 .htmx-indicator { opacity: 0.4; }
 
+/* List header (title + action button row) */
+.list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.list-header h2 { font-size: 20px; }
+
+/* Buttons */
+.btn {
+  display: inline-block;
+  padding: 7px 16px;
+  font-size: 13px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  text-decoration: none;
+  line-height: 1.4;
+}
+
+.btn:hover { background: var(--surface); text-decoration: none; }
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { opacity: 0.88; background: var(--accent); }
+.btn-danger { color: var(--danger); border-color: var(--danger); }
+.btn-danger:hover { background: var(--danger); color: #fff; }
+
+/* Person form (add / edit pages) */
+.person-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 480px;
+}
+
+.person-form .field { display: flex; flex-direction: column; gap: 4px; }
+
+.person-form label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.person-form input,
+.person-form select {
+  padding: 7px 10px;
+  font-size: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--fg);
+  width: 100%;
+}
+
+.person-form input:focus,
+.person-form select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  border-color: var(--accent);
+}
+
+.advanced-details {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+
+.advanced-details summary {
+  font-size: 13px;
+  color: var(--accent);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+
+.advanced-details summary::-webkit-details-marker { display: none; }
+.advanced-details summary::before { content: "▶ "; font-size: 10px; }
+.advanced-details[open] summary::before { content: "▼ "; font-size: 10px; }
+
+.advanced-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 12px;
+}
+
+.form-actions { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+
+/* Danger zone */
+.danger-zone {
+  margin-top: 32px;
+  max-width: 480px;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  opacity: 0.85;
+}
+
+.danger-zone .section-header {
+  color: var(--danger);
+  background: transparent;
+  border-bottom-color: var(--danger);
+}
+
 /* Cadence inline edit */
 .edit-btn {
   background: none;

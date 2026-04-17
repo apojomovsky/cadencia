@@ -4,7 +4,7 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
@@ -12,11 +12,18 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from cadencia.api.deps import get_backup_status, get_db, get_owner_id
 from cadencia.config import settings
 from cadencia.models.feedback import AddFeedbackInput
+from cadencia.models.people import CreatePersonInput
 from cadencia.models.stakeholders import CreateStakeholderInput
 from cadencia.services.action_items import complete_action_item
 from cadencia.services.exceptions import NotFoundError
 from cadencia.services.feedback import add_feedback, list_feedback_for_person
-from cadencia.services.people import get_person, list_people, set_one_on_one_cadence
+from cadencia.services.people import (
+    create_person,
+    get_person,
+    list_people,
+    set_one_on_one_cadence,
+    update_person_full,
+)
 from cadencia.services.queries import get_person_overview, whats_stale
 from cadencia.services.stakeholders import create_stakeholder
 from cadencia.services.stakeholders import list_stakeholders as list_stakeholders_svc
@@ -159,6 +166,46 @@ async def people_list(
     )
 
 
+@router.get("/people/new", response_class=HTMLResponse)
+async def people_new_form(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request,
+        "people_new.html",
+        {**_backup_context()},
+    )
+
+
+@router.post("/people", response_class=HTMLResponse)
+async def people_create(
+    request: Request,
+    conn: AsyncConnection = Depends(get_db),
+    owner_id: str = Depends(get_owner_id),
+) -> RedirectResponse:
+    form = await request.form()
+
+    def _opt(key: str) -> str | None:
+        v = str(form.get(key, "")).strip()
+        return v or None
+
+    def _int_opt(key: str) -> int | None:
+        v = str(form.get(key, "")).strip()
+        return int(v) if v else None
+
+    start_raw = _opt("start_date")
+    from datetime import date as _date
+    data = CreatePersonInput(
+        name=str(form.get("name", "")).strip(),
+        role=_opt("role"),
+        seniority=_opt("seniority"),  # type: ignore[arg-type]
+        start_date=_date.fromisoformat(start_raw) if start_raw else None,
+        one_on_one_cadence_days=_int_opt("one_on_one_cadence_days"),
+        recurrence_weekday=_int_opt("recurrence_weekday"),
+        recurrence_week_of_month=_int_opt("recurrence_week_of_month"),
+    )
+    person = await create_person(conn, data, owner_id, source="web")
+    return RedirectResponse(f"/people/{person.id}", status_code=303)
+
+
 @router.get("/people/{person_id}", response_class=HTMLResponse)
 async def person_detail(
     request: Request,
@@ -237,6 +284,88 @@ async def person_detail(
             **_backup_context(),
         },
     )
+
+
+@router.get("/people/{person_id}/edit", response_class=HTMLResponse)
+async def person_edit_form(
+    request: Request,
+    person_id: str,
+    conn: AsyncConnection = Depends(get_db),
+    owner_id: str = Depends(get_owner_id),
+) -> HTMLResponse:
+    try:
+        person = await get_person(conn, person_id, owner_id)
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Person not found")
+    return templates.TemplateResponse(
+        request,
+        "person_edit.html",
+        {"person": person, **_backup_context()},
+    )
+
+
+@router.post("/people/{person_id}/edit", response_class=HTMLResponse)
+async def person_edit_save(
+    request: Request,
+    person_id: str,
+    conn: AsyncConnection = Depends(get_db),
+    owner_id: str = Depends(get_owner_id),
+) -> RedirectResponse:
+    form = await request.form()
+
+    def _opt(key: str) -> str | None:
+        v = str(form.get(key, "")).strip()
+        return v or None
+
+    def _int_opt(key: str) -> int | None:
+        v = str(form.get(key, "")).strip()
+        return int(v) if v else None
+
+    start_raw = _opt("start_date")
+    from datetime import date as _date
+    try:
+        await update_person_full(
+            conn,
+            person_id,
+            name=str(form.get("name", "")).strip(),
+            role=_opt("role"),
+            seniority=_opt("seniority"),
+            start_date=_date.fromisoformat(start_raw) if start_raw else None,
+            status=str(form.get("status", "active")),
+            recurrence_weekday=_int_opt("recurrence_weekday"),
+            recurrence_week_of_month=_int_opt("recurrence_week_of_month"),
+            owner_id=owner_id,
+            source="web",
+        )
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Person not found")
+    return RedirectResponse(f"/people/{person_id}", status_code=303)
+
+
+@router.post("/people/{person_id}/archive", response_class=HTMLResponse)
+async def person_archive(
+    person_id: str,
+    conn: AsyncConnection = Depends(get_db),
+    owner_id: str = Depends(get_owner_id),
+) -> RedirectResponse:
+    try:
+        person = await get_person(conn, person_id, owner_id)
+        await update_person_full(
+            conn,
+            person_id,
+            name=person.name,
+            role=person.role,
+            seniority=person.seniority,
+            start_date=person.start_date,
+            status="left",
+            recurrence_weekday=person.recurrence_weekday,
+            recurrence_week_of_month=person.recurrence_week_of_month,
+            owner_id=owner_id,
+            source="web",
+        )
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Person not found")
+    return RedirectResponse("/people", status_code=303)
 
 
 @router.post("/action-items/{action_item_id}/complete", response_class=HTMLResponse)
@@ -409,7 +538,6 @@ async def stakeholders_create(
         notes=str(form.get("notes", "")) or None,
     )
     await create_stakeholder(conn, data, owner_id)
-    from fastapi.responses import RedirectResponse
     return RedirectResponse("/stakeholders", status_code=303)
 
 

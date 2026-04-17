@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Add Person | Cadencia{% endblock %}
+
+{% block content %}
+<a class="back-link" href="/people">&larr; People</a>
+<h2 style="margin-bottom: 24px;">Add Person</h2>
+
+<form class="person-form" method="post" action="/people">
+  <div class="field">
+    <label for="name">Name *</label>
+    <input id="name" type="text" name="name" required autofocus placeholder="Full name">
+  </div>
+  <div class="field">
+    <label for="role">Role</label>
+    <input id="role" type="text" name="role" placeholder="e.g. Senior Engineer">
+  </div>
+  <div class="field">
+    <label for="seniority">Seniority</label>
+    <select id="seniority" name="seniority">
+      <option value="">Not set</option>
+      <option value="P1">P1</option>
+      <option value="P2">P2</option>
+      <option value="P3">P3</option>
+    </select>
+  </div>
+  <div class="field">
+    <label for="start_date">Start date</label>
+    <input id="start_date" type="date" name="start_date">
+  </div>
+
+  <details class="advanced-details">
+    <summary>Advanced options</summary>
+    <div class="advanced-fields">
+      <div class="field">
+        <label for="one_on_one_cadence_days">1:1 cadence (days)</label>
+        <input id="one_on_one_cadence_days" type="number" name="one_on_one_cadence_days"
+          min="1" max="365" placeholder="Uses global default">
+      </div>
+      <div class="field">
+        <label for="recurrence_weekday">Recurrence weekday</label>
+        <select id="recurrence_weekday" name="recurrence_weekday">
+          <option value="">Not set</option>
+          <option value="0">Monday</option>
+          <option value="1">Tuesday</option>
+          <option value="2">Wednesday</option>
+          <option value="3">Thursday</option>
+          <option value="4">Friday</option>
+          <option value="5">Saturday</option>
+          <option value="6">Sunday</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="recurrence_week_of_month">Week of month</label>
+        <select id="recurrence_week_of_month" name="recurrence_week_of_month">
+          <option value="">Not set (every N days)</option>
+          <option value="1">1st</option>
+          <option value="2">2nd</option>
+          <option value="3">3rd</option>
+          <option value="4">4th</option>
+          <option value="-1">Last</option>
+        </select>
+      </div>
+    </div>
+  </details>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Add person</button>
+    <a href="/people" class="btn">Cancel</a>
+  </div>
+</form>
+{% endblock %}

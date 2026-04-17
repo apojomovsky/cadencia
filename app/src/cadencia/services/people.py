@@ -314,6 +314,60 @@ async def update_person(
     return await get_person(conn, person_id, owner_id)
 
 
+async def update_person_full(
+    conn: AsyncConnection,
+    person_id: str,
+    name: str,
+    role: str | None,
+    seniority: str | None,
+    start_date: date | None,
+    status: str,
+    recurrence_weekday: int | None,
+    recurrence_week_of_month: int | None,
+    owner_id: str = "default",
+    source: str = "api",
+) -> PersonDetail:
+    """Full-replace update: every field is written, None clears the column."""
+    await get_person(conn, person_id, owner_id)
+    now = datetime.now(UTC).isoformat()
+    await conn.execute(
+        text(
+            "UPDATE people SET"
+            " name = :name, role = :role, seniority = :seniority,"
+            " start_date = :start_date, status = :status,"
+            " recurrence_weekday = :recurrence_weekday,"
+            " recurrence_week_of_month = :recurrence_week_of_month,"
+            " updated_at = :now"
+            " WHERE id = :id AND owner_id = :owner"
+        ),
+        {
+            "name": name,
+            "role": role,
+            "seniority": seniority,
+            "start_date": start_date.isoformat() if start_date else None,
+            "status": status,
+            "recurrence_weekday": recurrence_weekday,
+            "recurrence_week_of_month": recurrence_week_of_month,
+            "now": now,
+            "id": person_id,
+            "owner": owner_id,
+        },
+    )
+    logger.info(
+        json.dumps(
+            {
+                "event": "write",
+                "table": "people",
+                "operation": "update_full",
+                "record_id": person_id,
+                "source": source,
+                "ts": now,
+            }
+        )
+    )
+    return await get_person(conn, person_id, owner_id)
+
+
 async def set_one_on_one_cadence(
     conn: AsyncConnection,
     person_id: str,
