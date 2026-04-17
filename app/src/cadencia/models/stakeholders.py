@@ -10,6 +10,7 @@ class Stakeholder(BaseModel):
     type: Literal["am", "client", "internal", "other"]
     organization: str | None
     notes: str | None
+    aliases: list[str]
     created_at: datetime
     updated_at: datetime
 
@@ -19,6 +20,7 @@ class CreateStakeholderInput(BaseModel):
     type: Literal["am", "client", "internal", "other"] = "other"
     organization: str | None = None
     notes: str | None = None
+    aliases: list[str] = []
 
 
 class UpdateStakeholderInput(BaseModel):
@@ -26,3 +28,4 @@ class UpdateStakeholderInput(BaseModel):
     type: Literal["am", "client", "internal", "other"] | None = None
     organization: str | None = None
     notes: str | None = None
+    aliases: list[str] | None = None

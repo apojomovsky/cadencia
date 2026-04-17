@@ -34,3 +34,34 @@ async def test_update_stakeholder_type(conn: AsyncConnection) -> None:
 
     assert updated.type == "am"
     assert updated.name == "Bob"
+
+
+async def test_create_stakeholder_with_aliases(conn: AsyncConnection) -> None:
+    s = await create_stakeholder(
+        conn, CreateStakeholderInput(name="Agustin Alba Chicar", aliases=["Agus"])
+    )
+    assert s.aliases == ["Agus"]
+
+
+async def test_update_stakeholder_aliases(conn: AsyncConnection) -> None:
+    s = await create_stakeholder(conn, CreateStakeholderInput(name="Gonzalo De Pedro"))
+    updated = await update_stakeholder(
+        conn, s.id, UpdateStakeholderInput(aliases=["Gonzo"])
+    )
+    assert updated.aliases == ["Gonzo"]
+
+
+async def test_clear_stakeholder_aliases(conn: AsyncConnection) -> None:
+    s = await create_stakeholder(
+        conn, CreateStakeholderInput(name="Someone", aliases=["S"])
+    )
+    updated = await update_stakeholder(conn, s.id, UpdateStakeholderInput(aliases=[]))
+    assert updated.aliases == []
+
+
+async def test_update_aliases_does_not_touch_when_none(conn: AsyncConnection) -> None:
+    s = await create_stakeholder(
+        conn, CreateStakeholderInput(name="Persist", aliases=["P"])
+    )
+    updated = await update_stakeholder(conn, s.id, UpdateStakeholderInput(name="Persist 2"))
+    assert updated.aliases == ["P"]

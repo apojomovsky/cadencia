@@ -20,6 +20,7 @@ def _row_to_stakeholder(row: object) -> Stakeholder:
         type=r["type"],
         organization=r.get("organization"),
         notes=r.get("notes"),
+        aliases=json.loads(r.get("aliases") or "[]"),
         created_at=r["created_at"],
         updated_at=r["updated_at"],
     )
@@ -51,6 +52,31 @@ async def get_stakeholder(
     return _row_to_stakeholder(row)
 
 
+async def find_stakeholder_by_name_or_alias(
+    conn: AsyncConnection,
+    query: str,
+    owner_id: str = "default",
+) -> list[Stakeholder]:
+    """Return stakeholders whose name or any alias matches query (case-insensitive, exact)."""
+    q = query.strip().lower()
+    result = await conn.execute(
+        text("""
+            SELECT DISTINCT s.*
+            FROM stakeholders s
+            WHERE s.owner_id = :owner
+              AND (
+                lower(s.name) = :q
+                OR EXISTS (
+                    SELECT 1 FROM json_each(s.aliases) WHERE lower(value) = :q
+                )
+              )
+            ORDER BY s.name
+        """),
+        {"owner": owner_id, "q": q},
+    )
+    return [_row_to_stakeholder(r) for r in result.fetchall()]
+
+
 async def create_stakeholder(
     conn: AsyncConnection,
     data: CreateStakeholderInput,
@@ -62,8 +88,8 @@ async def create_stakeholder(
     await conn.execute(
         text(
             "INSERT INTO stakeholders (id, owner_id, name, type, organization, notes,"
-            " created_at, updated_at)"
-            " VALUES (:id, :owner, :name, :type, :org, :notes, :now, :now)"
+            " aliases, created_at, updated_at)"
+            " VALUES (:id, :owner, :name, :type, :org, :notes, :aliases, :now, :now)"
         ),
         {
             "id": sid,
@@ -72,6 +98,7 @@ async def create_stakeholder(
             "type": data.type,
             "org": data.organization,
             "notes": data.notes,
+            "aliases": json.dumps(data.aliases),
             "now": now,
         },
     )
@@ -115,6 +142,9 @@ async def update_stakeholder(
     if data.notes is not None:
         updates["notes"] = data.notes
         set_clauses.append("notes = :notes")
+    if data.aliases is not None:
+        updates["aliases"] = json.dumps(data.aliases)
+        set_clauses.append("aliases = :aliases")
 
     await conn.execute(
         text(
