@@ -19,7 +19,6 @@ def _row_to_stakeholder(row: object) -> Stakeholder:
         name=r["name"],
         type=r["type"],
         organization=r.get("organization"),
-        email=r.get("email"),
         notes=r.get("notes"),
         created_at=r["created_at"],
         updated_at=r["updated_at"],
@@ -62,9 +61,9 @@ async def create_stakeholder(
     sid = str(uuid.uuid4())
     await conn.execute(
         text(
-            "INSERT INTO stakeholders (id, owner_id, name, type, organization, email, notes,"
+            "INSERT INTO stakeholders (id, owner_id, name, type, organization, notes,"
             " created_at, updated_at)"
-            " VALUES (:id, :owner, :name, :type, :org, :email, :notes, :now, :now)"
+            " VALUES (:id, :owner, :name, :type, :org, :notes, :now, :now)"
         ),
         {
             "id": sid,
@@ -72,7 +71,6 @@ async def create_stakeholder(
             "name": data.name,
             "type": data.type,
             "org": data.organization,
-            "email": data.email,
             "notes": data.notes,
             "now": now,
         },

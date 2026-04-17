@@ -377,7 +377,6 @@ async def list_stakeholders() -> list[dict[str, Any]]:
             "name": s.name,
             "type": s.type,
             "organization": s.organization,
-            "email": s.email,
         }
         for s in stakeholders
     ]
@@ -388,7 +387,6 @@ async def create_stakeholder(
     name: str,
     type: str = "other",
     organization: str | None = None,
-    email: str | None = None,
     notes: str | None = None,
 ) -> dict[str, Any]:
     """Create a new stakeholder.
@@ -396,7 +394,6 @@ async def create_stakeholder(
     name: stakeholder's full name.
     type: "am" (account manager) | "client" | "internal" | "other"
     organization: company or team name.
-    email: optional contact email.
     notes: any relevant context.
     """
     async with get_connection() as conn:
@@ -404,7 +401,6 @@ async def create_stakeholder(
             name=name,
             type=type,  # type: ignore[arg-type]
             organization=organization,
-            email=email,
             notes=notes,
         )
         stakeholder = await svc_create_stakeholder(conn, data, settings.owner_id, source="mcp")

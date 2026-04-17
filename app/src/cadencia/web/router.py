@@ -534,7 +534,6 @@ async def stakeholders_create(
         name=str(form.get("name", "")),
         type=str(form.get("type", "other")),  # type: ignore[arg-type]
         organization=str(form.get("organization", "")) or None,
-        email=str(form.get("email", "")) or None,
         notes=str(form.get("notes", "")) or None,
     )
     await create_stakeholder(conn, data, owner_id)

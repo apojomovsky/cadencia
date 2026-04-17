@@ -11,7 +11,6 @@
     <span class="person-name">{{ s.name }}</span>
     <span class="person-role">{{ s.type }}</span>
     {% if s.organization %}<span class="badge muted">{{ s.organization }}</span>{% endif %}
-    {% if s.email %}<span style="font-size:13px; color:var(--muted);">{{ s.email }}</span>{% endif %}
   </div>
   {% endfor %}
 </div>
@@ -33,8 +32,6 @@
         <option value="other" selected>Other</option>
       </select>
       <input type="text" name="organization" placeholder="Organization"
-        style="padding:6px 8px; font-size:13px; border:1px solid var(--border); border-radius:4px; background:var(--bg); color:var(--fg);">
-      <input type="email" name="email" placeholder="Email"
         style="padding:6px 8px; font-size:13px; border:1px solid var(--border); border-radius:4px; background:var(--bg); color:var(--fg);">
       <button type="submit" style="padding:6px 16px; font-size:13px; align-self:flex-start;">Add</button>
     </form>
