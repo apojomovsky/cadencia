@@ -1,0 +1,1 @@
+ALTER TABLE stakeholders ADD COLUMN aliases TEXT NOT NULL DEFAULT '[]';
