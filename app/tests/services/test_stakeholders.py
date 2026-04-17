@@ -3,7 +3,12 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from cadencia.models.stakeholders import CreateStakeholderInput, UpdateStakeholderInput
 from cadencia.services.exceptions import NotFoundError
-from cadencia.services.stakeholders import create_stakeholder, get_stakeholder, update_stakeholder
+from cadencia.services.stakeholders import (
+    create_stakeholder,
+    find_stakeholder_by_name_or_alias,
+    get_stakeholder,
+    update_stakeholder,
+)
 
 
 async def test_update_stakeholder_partial(conn: AsyncConnection) -> None:
@@ -65,3 +70,33 @@ async def test_update_aliases_does_not_touch_when_none(conn: AsyncConnection) ->
     )
     updated = await update_stakeholder(conn, s.id, UpdateStakeholderInput(name="Persist 2"))
     assert updated.aliases == ["P"]
+
+
+async def test_find_by_name(conn: AsyncConnection) -> None:
+    await create_stakeholder(conn, CreateStakeholderInput(name="Gonzalo De Pedro"))
+    results = await find_stakeholder_by_name_or_alias(conn, "Gonzalo De Pedro")
+    assert len(results) == 1
+    assert results[0].name == "Gonzalo De Pedro"
+
+
+async def test_find_by_alias(conn: AsyncConnection) -> None:
+    await create_stakeholder(
+        conn, CreateStakeholderInput(name="Gonzalo De Pedro", aliases=["Gonzo"])
+    )
+    results = await find_stakeholder_by_name_or_alias(conn, "Gonzo")
+    assert len(results) == 1
+    assert results[0].name == "Gonzalo De Pedro"
+
+
+async def test_find_case_insensitive(conn: AsyncConnection) -> None:
+    await create_stakeholder(
+        conn, CreateStakeholderInput(name="Gonzalo De Pedro", aliases=["Gonzo"])
+    )
+    assert len(await find_stakeholder_by_name_or_alias(conn, "gonzo")) == 1
+    assert len(await find_stakeholder_by_name_or_alias(conn, "GONZALO DE PEDRO")) == 1
+
+
+async def test_find_no_match(conn: AsyncConnection) -> None:
+    await create_stakeholder(conn, CreateStakeholderInput(name="Someone"))
+    results = await find_stakeholder_by_name_or_alias(conn, "Nobody")
+    assert results == []
