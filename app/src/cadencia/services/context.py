@@ -87,6 +87,29 @@ def list_context_docs(context_dir: str) -> list[ContextDocSummary]:
     return results
 
 
+def write_context_doc(
+    context_dir: str,
+    filename: str,
+    content: str,
+    overwrite: bool = False,
+) -> ContextDoc:
+    """Write a context document. Returns the parsed result for validation feedback."""
+    if not filename.endswith(".md"):
+        raise ValueError(f"Filename must end in .md, got: {filename!r}")
+    safe_name = os.path.basename(filename)
+    if safe_name != filename:
+        raise ValueError(f"Filename must not contain path separators: {filename!r}")
+    os.makedirs(context_dir, exist_ok=True)
+    path = os.path.join(context_dir, safe_name)
+    if os.path.exists(path) and not overwrite:
+        raise FileExistsError(
+            f"{safe_name!r} already exists. Pass overwrite=true to replace it."
+        )
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(content)
+    return read_context_doc(context_dir, safe_name)
+
+
 def read_context_doc(context_dir: str, filename: str) -> ContextDoc:
     """Read a single context document and return its metadata and body."""
     # Prevent path traversal
