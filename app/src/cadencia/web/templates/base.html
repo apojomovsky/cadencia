@@ -4,19 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Cadencia{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/style.css">
   <script src="/static/htmx.min.js" defer></script>
 </head>
 <body>
   <header class="site-header">
-    <h1>
-      <a href="/" style="color: inherit; text-decoration: none;">Cadencia</a>
-      <span style="font-weight: 400; font-size: 14px; margin-left: 16px;">
-        <a href="/people">People</a>
-        &nbsp;&nbsp;
-        <a href="/stakeholders">Stakeholders</a>
-      </span>
-    </h1>
+    <a href="/" class="site-logo">
+      <img src="/static/logo-wordmark-white.svg" alt="Cadencia" height="28">
+    </a>
+    <nav class="site-nav">
+      <a href="/people" class="nav-link {% block nav_people %}{% endblock %}">People</a>
+      <a href="/stakeholders" class="nav-link {% block nav_stakeholders %}{% endblock %}">Stakeholders</a>
+    </nav>
     <div class="backup-status {% if backup_overdue %}overdue{% endif %}">
       {% if backup_overdue %}
         backup: OVERDUE
