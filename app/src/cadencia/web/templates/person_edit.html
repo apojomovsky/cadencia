@@ -15,13 +15,9 @@
     <input id="role" type="text" name="role" value="{{ person.role or '' }}">
   </div>
   <div class="field">
-    <label for="seniority">Seniority</label>
-    <select id="seniority" name="seniority">
-      <option value="" {% if not person.seniority %}selected{% endif %}>Not set</option>
-      <option value="P1" {% if person.seniority == "P1" %}selected{% endif %}>P1</option>
-      <option value="P2" {% if person.seniority == "P2" %}selected{% endif %}>P2</option>
-      <option value="P3" {% if person.seniority == "P3" %}selected{% endif %}>P3</option>
-    </select>
+    <label for="seniority">Level / Seniority</label>
+    <input id="seniority" type="text" name="seniority" maxlength="20"
+      placeholder="e.g. L3, Staff, P2" value="{{ person.seniority or '' }}">
   </div>
   <div class="field">
     <label for="start_date">Start date</label>

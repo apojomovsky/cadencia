@@ -8,7 +8,7 @@ class PersonSummary(BaseModel):
     id: str
     name: str
     role: str | None
-    seniority: Literal["P1", "P2", "P3"] | None
+    seniority: str | None
     status: Literal["active", "leaving", "left"]
     current_allocation_type: Literal["client", "internal", "bench"] | None
     current_allocation_confirmed_date: date | None
@@ -26,7 +26,7 @@ class PersonDetail(BaseModel):
     id: str
     name: str
     role: str | None
-    seniority: Literal["P1", "P2", "P3"] | None
+    seniority: str | None
     start_date: date | None
     status: Literal["active", "leaving", "left"]
     created_at: datetime
@@ -39,7 +39,7 @@ class PersonDetail(BaseModel):
 class CreatePersonInput(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     role: str | None = None
-    seniority: Literal["P1", "P2", "P3"] | None = None
+    seniority: str | None = None
     start_date: date | None = None
     status: Literal["active", "leaving", "left"] = "active"
     one_on_one_cadence_days: int | None = None
@@ -50,7 +50,7 @@ class CreatePersonInput(BaseModel):
 class UpdatePersonInput(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
     role: str | None = None
-    seniority: Literal["P1", "P2", "P3"] | None = None
+    seniority: str | None = None
     start_date: date | None = None
     status: Literal["active", "leaving", "left"] | None = None
     recurrence_weekday: int | None = None
