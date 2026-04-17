@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from cadencia.models.observations import AddObservationInput, Observation
+from cadencia.models.observations import AddObservationInput, EditObservationInput, Observation
 from cadencia.services.people import get_person
 
 logger = logging.getLogger(__name__)
@@ -114,3 +114,57 @@ async def list_observations(
         ]
 
     return observations
+
+
+async def edit_observation(
+    conn: AsyncConnection,
+    observation_id: str,
+    data: EditObservationInput,
+    owner_id: str = "default",
+    source: str = "api",
+) -> Observation:
+    result = await conn.execute(
+        text("SELECT * FROM observations WHERE id = :id AND owner_id = :owner"),
+        {"id": observation_id, "owner": owner_id},
+    )
+    row = result.fetchone()
+    if row is None:
+        from cadencia.services.exceptions import NotFoundError
+        raise NotFoundError("observation", observation_id)
+
+    now = datetime.now(UTC).isoformat()
+    updates: dict[str, object] = {"now": now, "id": observation_id, "owner": owner_id}
+    set_clauses: list[str] = []
+
+    if data.text is not None:
+        updates["text"] = data.text
+        set_clauses.append("text = :text")
+    if data.tags is not None:
+        updates["tags"] = json.dumps(data.tags)
+        set_clauses.append("tags = :tags")
+
+    if set_clauses:
+        await conn.execute(
+            text(
+                f"UPDATE observations SET {', '.join(set_clauses)}"
+                " WHERE id = :id AND owner_id = :owner"
+            ),
+            updates,
+        )
+        logger.info(
+            json.dumps(
+                {
+                    "event": "write",
+                    "table": "observations",
+                    "operation": "update",
+                    "record_id": observation_id,
+                    "source": source,
+                    "ts": now,
+                }
+            )
+        )
+
+    result = await conn.execute(
+        text("SELECT * FROM observations WHERE id = :id"), {"id": observation_id}
+    )
+    return _row_to_observation(result.fetchone())

@@ -22,3 +22,8 @@ class AddObservationInput(BaseModel):
     source: Literal["manual", "one_on_one", "mcp", "imported"] = "manual"
     sensitivity: Literal["normal", "personal", "confidential"] = "normal"
     observed_at: datetime | None = None  # defaults to now in service layer
+
+
+class EditObservationInput(BaseModel):
+    text: str | None = Field(default=None, min_length=1)
+    tags: list[str] | None = None
