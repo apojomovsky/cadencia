@@ -300,7 +300,8 @@ async def person_edit_form(
     return templates.TemplateResponse(
         request,
         "person_edit.html",
-        {"person": person, **_backup_context()},
+        {"person": person, "global_oo_cadence": settings.one_on_one_stale_days,
+         **_backup_context()},
     )
 
 
@@ -336,6 +337,9 @@ async def person_edit_save(
             recurrence_week_of_month=_int_opt("recurrence_week_of_month"),
             owner_id=owner_id,
             source="web",
+        )
+        await set_one_on_one_cadence(
+            conn, person_id, _int_opt("one_on_one_cadence_days"), owner_id, source="web"
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Person not found")

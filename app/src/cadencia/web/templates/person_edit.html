@@ -33,9 +33,16 @@
     </select>
   </div>
 
-  <details class="advanced-details" {% if person.recurrence_weekday is not none %}open{% endif %}>
+  <details class="advanced-details" {% if person.recurrence_weekday is not none or person.one_on_one_cadence_days is not none %}open{% endif %}>
     <summary>Advanced options</summary>
     <div class="advanced-fields">
+      <div class="field">
+        <label for="one_on_one_cadence_days">1:1 cadence (days)</label>
+        <input id="one_on_one_cadence_days" type="number" name="one_on_one_cadence_days"
+          min="1" max="365"
+          value="{{ person.one_on_one_cadence_days or '' }}"
+          placeholder="Uses global default ({{ global_oo_cadence }}d)">
+      </div>
       <div class="field">
         <label for="recurrence_weekday">Recurrence weekday</label>
         <select id="recurrence_weekday" name="recurrence_weekday">
