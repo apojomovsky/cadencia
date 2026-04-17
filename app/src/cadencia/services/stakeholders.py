@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from cadencia.models.stakeholders import CreateStakeholderInput, Stakeholder
+from cadencia.models.stakeholders import CreateStakeholderInput, Stakeholder, UpdateStakeholderInput
 from cadencia.services.exceptions import NotFoundError
 
 logger = logging.getLogger(__name__)
@@ -88,3 +88,51 @@ async def create_stakeholder(
         )
     )
     return await get_stakeholder(conn, sid, owner_id)
+
+
+async def update_stakeholder(
+    conn: AsyncConnection,
+    stakeholder_id: str,
+    data: UpdateStakeholderInput,
+    owner_id: str = "default",
+    source: str = "api",
+) -> Stakeholder:
+    await get_stakeholder(conn, stakeholder_id, owner_id)
+
+    now = datetime.now(UTC).isoformat()
+    updates: dict[str, object] = {"now": now, "id": stakeholder_id, "owner": owner_id}
+    set_clauses: list[str] = ["updated_at = :now"]
+
+    if data.name is not None:
+        updates["name"] = data.name
+        set_clauses.append("name = :name")
+    if data.type is not None:
+        updates["type"] = data.type
+        set_clauses.append("type = :type")
+    if data.organization is not None:
+        updates["organization"] = data.organization
+        set_clauses.append("organization = :organization")
+    if data.notes is not None:
+        updates["notes"] = data.notes
+        set_clauses.append("notes = :notes")
+
+    await conn.execute(
+        text(
+            f"UPDATE stakeholders SET {', '.join(set_clauses)}"
+            " WHERE id = :id AND owner_id = :owner"
+        ),
+        updates,
+    )
+    logger.info(
+        json.dumps(
+            {
+                "event": "write",
+                "table": "stakeholders",
+                "operation": "update",
+                "record_id": stakeholder_id,
+                "source": source,
+                "ts": now,
+            }
+        )
+    )
+    return await get_stakeholder(conn, stakeholder_id, owner_id)

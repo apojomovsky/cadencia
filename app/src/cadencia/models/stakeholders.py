@@ -19,3 +19,10 @@ class CreateStakeholderInput(BaseModel):
     type: Literal["am", "client", "internal", "other"] = "other"
     organization: str | None = None
     notes: str | None = None
+
+
+class UpdateStakeholderInput(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    type: Literal["am", "client", "internal", "other"] | None = None
+    organization: str | None = None
+    notes: str | None = None
