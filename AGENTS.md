@@ -17,8 +17,8 @@ The full product spec is in `docs/SPEC.md`. Read it before implementing anything
 
 ## Getting started (MCP setup for agents)
 
-The repo root contains `.mcp.json` which points Claude Code at the Cadencia MCP server
-(`http://localhost:8081/sse`). For the tools to work, the stack must be running:
+The repo ships MCP configuration for both Claude Code and Gemini CLI, both pointing at the
+same server (`http://localhost:8081/sse`). For the tools to work, the stack must be running:
 
 ```bash
 docker compose up -d
@@ -33,7 +33,14 @@ docker compose ps
 ```
 
 If the MCP container is not running, the tools will fail silently. Start it before attempting
-any tool calls. The `.mcp.json` is already wired; no manual Claude Code config is needed.
+any tool calls.
+
+| Client | Config file | Notes |
+|---|---|---|
+| Claude Code | `.mcp.json` | Auto-loaded when opening a session from this directory |
+| Gemini CLI | `.gemini/settings.json` | Cadencia agent defined in `.gemini/agents/cadencia.md` |
+
+Both clients can be connected to the MCP server simultaneously without conflict.
 
 ---
 

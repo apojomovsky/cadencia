@@ -52,14 +52,15 @@ Run `make` with no arguments to see all available targets.
 
 ---
 
-## MCP tools (Claude Code)
+## MCP tools (Claude Code and Gemini CLI)
 
-The repo ships `.mcp.json` at the root. Claude Code picks it up automatically when you open a
-session from this directory:
+The repo ships MCP configuration for both Claude Code and Gemini CLI. Start the stack, then
+launch your AI assistant from this directory:
 
 ```bash
 make up
-claude
+claude      # Claude Code: uses .mcp.json
+gemini      # Gemini CLI: uses .gemini/settings.json + .gemini/agents/cadencia.md
 ```
 
 | Tool | What it does |
