@@ -513,10 +513,20 @@ async def health(request: Request) -> JSONResponse:
     return JSONResponse({"status": "ok"})
 
 
-# Use mcp.sse_app() as the main app directly to avoid issues with Mount
-app = mcp.sse_app()
-app.router.lifespan_context = lifespan
-app.add_route("/health", health)
+_mcp_app = mcp.streamable_http_app()
+_mcp_lifespan = _mcp_app.router.lifespan_context
+
+
+@asynccontextmanager
+async def combined_lifespan(app: Any):
+    async with lifespan(app):
+        async with _mcp_lifespan(app):
+            yield
+
+
+_mcp_app.router.lifespan_context = combined_lifespan
+_mcp_app.add_route("/health", health)
+app = _mcp_app
 
 if __name__ == "__main__":
-    mcp.run()
+    mcp.run(transport="streamable-http")

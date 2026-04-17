@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "cadencia": {
-      "type": "sse",
-      "url": "http://localhost:8081/sse"
+      "type": "http",
+      "url": "http://localhost:8081/mcp"
     }
   }
 }
