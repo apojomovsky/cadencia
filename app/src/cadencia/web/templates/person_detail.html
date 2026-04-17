@@ -1,35 +1,47 @@
 {% extends "base.html" %}
 {% block title %}{{ overview.name }} | Cadencia{% endblock %}
+{% block nav_people %}active{% endblock %}
 
 {% block content %}
 <a class="back-link" href="/people">&larr; People</a>
 
+{% set _parts = overview.name.split() %}
+{% if _parts | length >= 2 %}
+  {% set _initials = (_parts[0][0] ~ _parts[1][0]) | upper %}
+{% else %}
+  {% set _initials = overview.name[:2] | upper %}
+{% endif %}
+{% set _av_idx = (overview.name | length) % 6 %}
+
 <div class="person-header">
-  <h2>{{ overview.name }}</h2>
-  <a href="/people/{{ overview.person_id }}/edit" class="edit-btn" style="font-size:13px; margin-left:4px;">edit</a>
-  <span class="meta">
-    {% if overview.role %}{{ overview.role }}{% endif %}
-    {% if overview.seniority %}&nbsp;&middot;&nbsp;{{ overview.seniority }}{% endif %}
-    {% if overview.start_date %}&nbsp;&middot;&nbsp;Since {{ overview.start_date }}{% endif %}
-    &nbsp;&middot;&nbsp; 1:1
-    <span id="cadence-widget">
-      every
-      {% if overview.one_on_one_cadence_days %}
-        <strong>{{ overview.one_on_one_cadence_days }}d</strong>
-      {% else %}
-        <strong>{{ global_oo_cadence }}d</strong> <span style="color:var(--muted);font-size:12px;">(global)</span>
+  <div class="avatar avatar-lg av-{{ _av_idx }}">{{ _initials }}</div>
+  <div class="person-header-info">
+    <h2>{{ overview.name }}</h2>
+    <div class="meta">
+      {% if overview.role %}{{ overview.role }}{% endif %}
+      {% if overview.seniority %}&nbsp;&middot;&nbsp;{{ overview.seniority }}{% endif %}
+      {% if overview.start_date %}&nbsp;&middot;&nbsp;Since {{ overview.start_date }}{% endif %}
+      &nbsp;&middot;&nbsp; 1:1
+      <span id="cadence-widget">
+        every
+        {% if overview.one_on_one_cadence_days %}
+          <strong>{{ overview.one_on_one_cadence_days }}d</strong>
+        {% else %}
+          <strong>{{ global_oo_cadence }}d</strong> <span style="color:var(--muted);font-size:12px;">(global)</span>
+        {% endif %}
+        <button class="edit-btn"
+          hx-get="/people/{{ overview.person_id }}/cadence-edit-form"
+          hx-target="#cadence-widget"
+          hx-swap="outerHTML">edit</button>
+      </span>
+      {% if overview.recurrence_weekday is not none %}
+      <span style="font-size:12px; color:var(--muted); margin-left:4px;">
+        ({% set days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"] %}{{ days[overview.recurrence_weekday] }}{% if overview.recurrence_week_of_month %}, {% if overview.recurrence_week_of_month == -1 %}last{% elif overview.recurrence_week_of_month == 1 %}1st{% elif overview.recurrence_week_of_month == 2 %}2nd{% elif overview.recurrence_week_of_month == 3 %}3rd{% else %}4th{% endif %} of month{% endif %})
+      </span>
       {% endif %}
-      <button class="edit-btn"
-        hx-get="/people/{{ overview.person_id }}/cadence-edit-form"
-        hx-target="#cadence-widget"
-        hx-swap="outerHTML">edit</button>
-    </span>
-    {% if overview.recurrence_weekday is not none %}
-    <span style="font-size:12px; color:var(--muted); margin-left:4px;">
-      ({% set days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"] %}{{ days[overview.recurrence_weekday] }}{% if overview.recurrence_week_of_month %}, {% if overview.recurrence_week_of_month == -1 %}last{% elif overview.recurrence_week_of_month == 1 %}1st{% elif overview.recurrence_week_of_month == 2 %}2nd{% elif overview.recurrence_week_of_month == 3 %}3rd{% else %}4th{% endif %} of month{% endif %})
-    </span>
-    {% endif %}
-  </span>
+    </div>
+  </div>
+  <a href="/people/{{ overview.person_id }}/edit" class="btn" style="margin-left:auto;">Edit</a>
 </div>
 
 {# Section 1: RIGHT NOW #}
