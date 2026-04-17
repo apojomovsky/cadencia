@@ -3,7 +3,7 @@
 COMPOSE := docker compose
 UV      := uv
 
-.PHONY: help up down restart build dev logs shell test lint lint-fix setup-dev bootstrap
+.PHONY: help up down restart build dev logs shell test lint lint-fix setup-dev bootstrap nuke
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -47,6 +47,18 @@ lint-fix: ## Run ruff linter with auto-fix
 
 bootstrap: ## Interactive setup wizard (writes .env and optional override)
 	@bash scripts/bootstrap.sh
+
+nuke: ## DESTROY the database and all data (irreversible)
+	@printf "\033[31m\033[1mWARNING: This will permanently delete all your data.\033[0m\n"
+	@printf "\033[31mType YES to continue: \033[0m" && read ans && [ "$$ans" = "YES" ] || (echo "Aborted."; exit 1)
+	@$(COMPOSE) down
+	@HOST_DIR=$$(grep -s 'cadencia:/data' docker-compose.override.yml | awk -F: '{print $$1}' | xargs); \
+	 if [ -n "$$HOST_DIR" ] && [ -f "$$HOST_DIR/em.db" ]; then \
+	   rm -f "$$HOST_DIR/em.db" && printf "\033[31mDeleted $$HOST_DIR/em.db\033[0m\n"; \
+	 else \
+	   docker volume rm cadencia_data 2>/dev/null && printf "\033[31mDeleted Docker volume cadencia_data\033[0m\n" || printf "\033[33mNo database found to remove.\033[0m\n"; \
+	 fi
+	@$(COMPOSE) up -d
 
 setup-dev: ## Install dev dependencies and git hooks (run once)
 	$(UV) pip install -e "app/[dev]"
