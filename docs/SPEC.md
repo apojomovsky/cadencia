@@ -724,16 +724,23 @@ The container mounts:
 - A sentinel directory at `/backup-status/` (read-write, shared with `app`).
 - The rclone config at `/rclone/rclone.conf` (read-write; rclone refreshes OAuth tokens).
 
-### 7.2 SQLite online backup procedure
+### 7.2 Backup procedure
 
 Never copy the SQLite file with `cp` or `rsync` while it may be in WAL mode. Always use:
 ```bash
-sqlite3 /data/em.db ".backup /tmp/backup.db"
+sqlite3 /data/em.db ".backup /tmp/em.db"
 ```
 
 This produces a consistent snapshot even under concurrent reads.
 
-After backup: `gzip /tmp/backup.db` -> `cadencia-YYYY-MM-DD-HHMMSS.db.gz`.
+After backup, bundle the database and the context directory into a single archive:
+```bash
+tar -czf /tmp/cadencia-${TIMESTAMP}.tar.gz -C /tmp em.db -C /data context
+```
+
+The archive contains `em.db` at the root and a `context/` directory. If `/data/context` does not exist or is empty, it is omitted without error.
+
+Final artifact: `cadencia-YYYYMMDD-HHMMSS.tar.gz`.
 
 ### 7.3 rclone configuration
 
@@ -742,7 +749,7 @@ Destination path: configured via `BACKUP_PATH` env var (default: `cadencia-backu
 
 Full upload command:
 ```bash
-rclone copy /tmp/cadencia-${TIMESTAMP}.db.gz "${RCLONE_REMOTE}:${BACKUP_PATH}/"
+rclone copy /tmp/cadencia-${TIMESTAMP}.tar.gz "${RCLONE_REMOTE}:${BACKUP_PATH}/"
 ```
 
 **First-time setup (manual, one-time)**: Run `rclone config` on the host to create the Google
@@ -766,7 +773,7 @@ Implement retention as a shell function in the backup script. Do not use a third
 
 After each run, the backup script writes a JSON sentinel file:
 ```bash
-echo '{"success": true, "ts": "2026-04-15T03:01:23Z", "file": "cadencia-...db.gz"}' \
+echo '{"success": true, "ts": "2026-04-15T03:01:23Z", "file": "cadencia-....tar.gz"}' \
   > /backup-status/last.json
 ```
 
@@ -781,13 +788,14 @@ against the current time at render.
 Documented in README.md. Summary:
 1. `docker compose down`
 2. `rclone ls gdrive:cadencia-backups/` to list available backups.
-3. `rclone copy gdrive:cadencia-backups/cadencia-TIMESTAMP.db.gz /tmp/`
-4. `gunzip /tmp/cadencia-TIMESTAMP.db.gz`
+3. `rclone copy gdrive:cadencia-backups/cadencia-TIMESTAMP.tar.gz /tmp/`
+4. Extract database: `tar -xzf /tmp/cadencia-TIMESTAMP.tar.gz -C /tmp em.db`
 5. `docker volume create cadencia_data` (if not exists)
-6. Copy file into volume: `docker run --rm -v cadencia_data:/data -v /tmp:/tmp alpine cp /tmp/cadencia-TIMESTAMP.db /data/em.db`
-7. `docker compose up`
+6. Copy database into volume: `docker run --rm -v cadencia_data:/data -v /tmp:/tmp alpine cp /tmp/em.db /data/em.db`
+7. If the archive contains a `context/` directory, extract and copy it too: `tar -xzf ... -C /tmp context && docker run --rm -v cadencia_data:/data -v /tmp:/tmp alpine sh -c "cp -r /tmp/context /data/context"`
+8. `docker compose up`
 
-The `scripts/restore.sh` script implements these steps with prompts for confirmation.
+The `scripts/restore.sh` script implements these steps with prompts for confirmation. It also handles the legacy `.db.gz` format (database-only restore, no context) for backups created before this change.
 
 ---
 

@@ -49,7 +49,7 @@ apply_retention() {
 
     local files
     files=$(rclone --config="$RCLONE_CONFIG_FILE" lsf "${RCLONE_REMOTE}:${BACKUP_DEST_PATH}/" 2>/dev/null \
-        | grep -E '^cadencia-[0-9]{8}-[0-9]{6}\.db\.gz$' \
+        | grep -E '^cadencia-[0-9]{8}-[0-9]{6}\.tar\.gz$' \
         | sort) || true
 
     if [[ -z "$files" ]]; then
@@ -104,22 +104,28 @@ run_backup() {
 
     local ts
     ts="$(date -u +%Y%m%d-%H%M%S)"
-    local tmp_db="/tmp/em-backup-${ts}.db"
-    local gz_file="/tmp/cadencia-${ts}.db.gz"
-    local dest_name="cadencia-${ts}.db.gz"
+    local tmp_db="/tmp/em.db"
+    local tar_file="/tmp/cadencia-${ts}.tar.gz"
+    local dest_name="cadencia-${ts}.tar.gz"
 
     log "Starting backup..."
 
     # SQLite online backup (safe under concurrent reads/writes)
     sqlite3 "$DB_PATH" ".backup ${tmp_db}"
-    gzip -c "$tmp_db" > "$gz_file"
+
+    # Bundle db and context directory into a single archive
+    local tar_args=("-czf" "$tar_file" "-C" "/tmp" "em.db")
+    if [[ -d "/data/context" ]]; then
+        tar_args+=("-C" "/data" "context")
+    fi
+    tar "${tar_args[@]}"
     rm -f "$tmp_db"
 
-    log "Backup compressed: ${gz_file} ($(du -sh "$gz_file" | cut -f1))"
+    log "Backup created: ${tar_file} ($(du -sh "$tar_file" | cut -f1))"
 
     if [[ -f "$RCLONE_CONFIG_FILE" ]]; then
         log "Uploading to ${RCLONE_REMOTE}:${BACKUP_DEST_PATH}/${dest_name}"
-        rclone --config="$RCLONE_CONFIG_FILE" copy "$gz_file" "${RCLONE_REMOTE}:${BACKUP_DEST_PATH}/"
+        rclone --config="$RCLONE_CONFIG_FILE" copy "$tar_file" "${RCLONE_REMOTE}:${BACKUP_DEST_PATH}/"
         log "Upload complete."
         write_sentinel "true" "$dest_name"
         apply_retention
@@ -128,7 +134,7 @@ run_backup() {
         write_sentinel "true" "$dest_name"
     fi
 
-    rm -f "$gz_file"
+    rm -f "$tar_file"
 }
 
 # Write startup sentinel immediately so the Docker healthcheck passes

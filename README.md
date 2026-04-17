@@ -85,7 +85,7 @@ See `AGENTS.md` for guidance on working with this codebase via an AI agent.
 
 ```bash
 ./scripts/restore.sh                              # interactive: lists and prompts
-./scripts/restore.sh cadencia-20260415-030013.db.gz  # restore a specific file
+./scripts/restore.sh cadencia-20260415-030013.tar.gz  # restore a specific file
 ```
 
 The script stops the stack, replaces the database, and exits. Restart with `make up`.
