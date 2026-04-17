@@ -45,6 +45,9 @@ lint-fix: ## Run ruff linter with auto-fix
 
 # --- Setup ---
 
+backup: ## Trigger a manual backup now
+	$(COMPOSE) exec backup /usr/local/bin/backup.sh --now
+
 bootstrap: ## Interactive setup wizard (writes .env and optional override)
 	@bash scripts/bootstrap.sh
 

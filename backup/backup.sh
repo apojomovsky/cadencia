@@ -137,6 +137,12 @@ run_backup() {
     rm -f "$tar_file"
 }
 
+# --now flag: run a single backup immediately and exit (used by make backup)
+if [[ "${1:-}" == "--now" ]]; then
+    run_backup || write_sentinel "false" "null" "backup failed: see container logs"
+    exit 0
+fi
+
 # Write startup sentinel immediately so the Docker healthcheck passes
 write_sentinel "true" "null"
 log "Backup service started. Will run daily at ${BACKUP_HOUR}:00 UTC."
