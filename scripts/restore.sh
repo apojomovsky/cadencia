@@ -80,29 +80,35 @@ fi
 log "Stopping docker compose stack..."
 docker compose down
 
-docker volume inspect "$VOLUME_NAME" >/dev/null 2>&1 \
-    || docker volume create "$VOLUME_NAME"
+BIND_DIR="$(grep -s 'cadencia:/data' docker-compose.override.yml | awk -F: '{print $1}' | xargs)"
+
+if [[ -n "$BIND_DIR" ]]; then
+    log "Using bind mount: ${BIND_DIR}"
+    restore_db() { cp /tmp/em.db "${BIND_DIR}/em.db"; }
+    restore_context() { rm -rf "${BIND_DIR}/context" && cp -r /tmp/context "${BIND_DIR}/context"; }
+else
+    log "Using Docker volume: ${VOLUME_NAME}"
+    docker volume inspect "$VOLUME_NAME" >/dev/null 2>&1 || docker volume create "$VOLUME_NAME"
+    restore_db() {
+        docker run --rm -v "${VOLUME_NAME}:/data" -v "/tmp:/tmp" alpine cp /tmp/em.db /data/em.db
+    }
+    restore_context() {
+        docker run --rm -v "${VOLUME_NAME}:/data" -v "/tmp:/tmp" \
+            alpine sh -c "rm -rf /data/context && cp -r /tmp/context /data/context"
+    }
+fi
 
 if [[ "$BACKUP_FILE" == *.tar.gz ]]; then
     log "Extracting database and context files from archive..."
     tar -xzf "$TMP_FILE" -C /tmp em.db
-
-    # Restore database
-    docker run --rm \
-        -v "${VOLUME_NAME}:/data" \
-        -v "/tmp:/tmp" \
-        alpine cp /tmp/em.db /data/em.db
+    restore_db
     rm -f /tmp/em.db
 
-    # Restore context directory if present in archive
     if tar -tzf "$TMP_FILE" | grep -q '^context/'; then
         log "Restoring context directory..."
         rm -rf /tmp/context
         tar -xzf "$TMP_FILE" -C /tmp context
-        docker run --rm \
-            -v "${VOLUME_NAME}:/data" \
-            -v "/tmp:/tmp" \
-            alpine sh -c "rm -rf /data/context && cp -r /tmp/context /data/context"
+        restore_context
         rm -rf /tmp/context
     else
         log "No context directory in archive; skipping context restore."
@@ -113,13 +119,9 @@ elif [[ "$BACKUP_FILE" == *.db.gz ]]; then
     TMP_DB="/tmp/${BACKUP_FILE%.gz}"
     gunzip -f "$TMP_FILE"
     [[ -f "$TMP_DB" ]] || die "Decompression failed."
-
-    docker run --rm \
-        -v "${VOLUME_NAME}:/data" \
-        -v "/tmp:/tmp" \
-        alpine cp "/tmp/$(basename "$TMP_DB")" /data/em.db
+    cp "$TMP_DB" /tmp/em.db
+    restore_db
     rm -f "$TMP_DB"
-
     log "Note: context files were not included in legacy backups and were not restored."
 else
     die "Unrecognized backup format: ${BACKUP_FILE}"
