@@ -30,10 +30,6 @@
       placeholder="Comma-separated, e.g. Agus, Agus Alba"
       value="{{ stakeholder.aliases | join(', ') }}">
   </div>
-  <div class="field">
-    <label for="notes">Notes</label>
-    <input id="notes" type="text" name="notes" value="{{ stakeholder.notes or '' }}">
-  </div>
   <div class="form-actions">
     <button type="submit" class="btn btn-primary">Save changes</button>
     <a href="/stakeholders" class="btn">Cancel</a>

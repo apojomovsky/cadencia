@@ -15,14 +15,13 @@ async def test_update_stakeholder_partial(conn: AsyncConnection) -> None:
     s = await create_stakeholder(conn, CreateStakeholderInput(name="Alice", type="client", organization="Acme"))
 
     updated = await update_stakeholder(
-        conn, s.id, UpdateStakeholderInput(name="Alice Smith", notes="Lead contact")
+        conn, s.id, UpdateStakeholderInput(name="Alice Smith")
     )
 
     assert updated.id == s.id
     assert updated.name == "Alice Smith"
     assert updated.type == "client"
     assert updated.organization == "Acme"
-    assert updated.notes == "Lead contact"
 
 
 async def test_update_stakeholder_not_found(conn: AsyncConnection) -> None:

@@ -543,7 +543,6 @@ async def stakeholders_create(
         name=str(form.get("name", "")),
         type=str(form.get("type", "other")),  # type: ignore[arg-type]
         organization=str(form.get("organization", "")) or None,
-        notes=str(form.get("notes", "")) or None,
         aliases=aliases,
     )
     await create_stakeholder(conn, data, owner_id)
@@ -583,7 +582,6 @@ async def stakeholder_edit_save(
         name=str(form.get("name", "")).strip() or None,
         type=str(form.get("type", "")).strip() or None,  # type: ignore[arg-type]
         organization=str(form.get("organization", "")).strip() or None,
-        notes=str(form.get("notes", "")).strip() or None,
         aliases=aliases,
     )
     try:

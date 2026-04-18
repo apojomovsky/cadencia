@@ -19,7 +19,6 @@ def _row_to_stakeholder(row: object) -> Stakeholder:
         name=r["name"],
         type=r["type"],
         organization=r.get("organization"),
-        notes=r.get("notes"),
         aliases=json.loads(r.get("aliases") or "[]"),
         created_at=r["created_at"],
         updated_at=r["updated_at"],
@@ -87,9 +86,9 @@ async def create_stakeholder(
     sid = str(uuid.uuid4())
     await conn.execute(
         text(
-            "INSERT INTO stakeholders (id, owner_id, name, type, organization, notes,"
+            "INSERT INTO stakeholders (id, owner_id, name, type, organization,"
             " aliases, created_at, updated_at)"
-            " VALUES (:id, :owner, :name, :type, :org, :notes, :aliases, :now, :now)"
+            " VALUES (:id, :owner, :name, :type, :org, :aliases, :now, :now)"
         ),
         {
             "id": sid,
@@ -97,7 +96,6 @@ async def create_stakeholder(
             "name": data.name,
             "type": data.type,
             "org": data.organization,
-            "notes": data.notes,
             "aliases": json.dumps(data.aliases),
             "now": now,
         },
@@ -139,9 +137,6 @@ async def update_stakeholder(
     if data.organization is not None:
         updates["organization"] = data.organization
         set_clauses.append("organization = :organization")
-    if data.notes is not None:
-        updates["notes"] = data.notes
-        set_clauses.append("notes = :notes")
     if data.aliases is not None:
         updates["aliases"] = json.dumps(data.aliases)
         set_clauses.append("aliases = :aliases")
