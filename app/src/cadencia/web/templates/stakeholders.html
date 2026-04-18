@@ -3,16 +3,23 @@
 {% block nav_stakeholders %}active{% endblock %}
 
 {% block content %}
-<h2 style="margin-bottom: 16px;">Stakeholders</h2>
+<div class="list-header">
+  <h2>Stakeholders</h2>
+</div>
 
 {% if stakeholders %}
 <div class="people-list" style="margin-bottom: 24px;">
   {% for s in stakeholders %}
-  <div class="person-row" style="cursor:default;">
-    <span class="person-name">{{ s.name }}</span>
-    <span class="person-role">{{ s.type }}</span>
+  <a class="person-row" href="/stakeholders/{{ s.id }}/edit">
+    <div class="person-info">
+      <div class="person-name">{{ s.name }}</div>
+      {% if s.aliases %}
+      <div class="person-role">{{ s.aliases | join(', ') }}</div>
+      {% endif %}
+    </div>
+    <span class="badge muted">{{ s.type }}</span>
     {% if s.organization %}<span class="badge muted">{{ s.organization }}</span>{% endif %}
-  </div>
+  </a>
   {% endfor %}
 </div>
 {% else %}
@@ -22,19 +29,31 @@
 <div class="section">
   <div class="section-header">Add Stakeholder</div>
   <div class="section-body">
-    <form method="post" action="/stakeholders" style="display:flex; flex-direction:column; gap:8px; max-width:400px;">
-      <input type="text" name="name" placeholder="Name *" required
-        style="padding:6px 8px; font-size:13px; border:1px solid var(--border); border-radius:4px; background:var(--bg); color:var(--fg);">
-      <select name="type"
-        style="padding:6px 8px; font-size:13px; border:1px solid var(--border); border-radius:4px; background:var(--bg); color:var(--fg);">
-        <option value="am">Account Manager</option>
-        <option value="client">Client</option>
-        <option value="internal">Internal</option>
-        <option value="other" selected>Other</option>
-      </select>
-      <input type="text" name="organization" placeholder="Organization"
-        style="padding:6px 8px; font-size:13px; border:1px solid var(--border); border-radius:4px; background:var(--bg); color:var(--fg);">
-      <button type="submit" style="padding:6px 16px; font-size:13px; align-self:flex-start;">Add</button>
+    <form class="person-form" method="post" action="/stakeholders" style="max-width:400px;">
+      <div class="field">
+        <label for="name">Name *</label>
+        <input id="name" type="text" name="name" required placeholder="Full name">
+      </div>
+      <div class="field">
+        <label for="type">Type</label>
+        <select id="type" name="type">
+          <option value="am">Account Manager</option>
+          <option value="client">Client</option>
+          <option value="internal">Internal</option>
+          <option value="other" selected>Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="organization">Organization</label>
+        <input id="organization" type="text" name="organization" placeholder="Optional">
+      </div>
+      <div class="field">
+        <label for="aliases">Also known as</label>
+        <input id="aliases" type="text" name="aliases" placeholder="Comma-separated nicknames, e.g. Agus, Gonzo">
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Add</button>
+      </div>
     </form>
   </div>
 </div>

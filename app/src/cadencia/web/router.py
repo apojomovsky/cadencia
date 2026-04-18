@@ -537,11 +537,14 @@ async def stakeholders_create(
     owner_id: str = Depends(get_owner_id),
 ) -> HTMLResponse:
     form = await request.form()
+    raw_aliases = str(form.get("aliases", "")).strip()
+    aliases = [a.strip() for a in raw_aliases.split(",") if a.strip()]
     data = CreateStakeholderInput(
         name=str(form.get("name", "")),
         type=str(form.get("type", "other")),  # type: ignore[arg-type]
         organization=str(form.get("organization", "")) or None,
         notes=str(form.get("notes", "")) or None,
+        aliases=aliases,
     )
     await create_stakeholder(conn, data, owner_id)
     return RedirectResponse("/stakeholders", status_code=303)
