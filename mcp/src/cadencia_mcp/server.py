@@ -36,6 +36,7 @@ from cadencia.services.one_on_ones import log_one_on_one as svc_log_oo
 from cadencia.services.queries import get_person_overview
 from cadencia.services.queries import whats_stale as svc_whats_stale
 from cadencia.services.stakeholders import create_stakeholder as svc_create_stakeholder
+from cadencia.services.stakeholders import find_stakeholder_by_name_or_alias as svc_find_stakeholder
 from cadencia.services.stakeholders import list_stakeholders as svc_list_stakeholders
 from cadencia.services.stakeholders import update_stakeholder as svc_update_stakeholder
 
@@ -382,6 +383,30 @@ async def list_stakeholders() -> list[dict[str, Any]]:
         {
             "id": s.id,
             "name": s.name,
+            "aliases": s.aliases,
+            "type": s.type,
+            "organization": s.organization,
+        }
+        for s in stakeholders
+    ]
+
+
+@mcp.tool()
+async def find_stakeholder(name_or_alias: str) -> list[dict[str, Any]]:
+    """Find stakeholders by name or alias (case-insensitive exact match).
+
+    Use this to resolve a person's name or nickname to a stakeholder ID
+    before calling other tools that require a stakeholder_id.
+
+    name_or_alias: the name or alias to search for, e.g. "Gonzo" or "Gonzalo De Pedro".
+    """
+    async with get_connection() as conn:
+        stakeholders = await svc_find_stakeholder(conn, name_or_alias, settings.owner_id)
+    return [
+        {
+            "id": s.id,
+            "name": s.name,
+            "aliases": s.aliases,
             "type": s.type,
             "organization": s.organization,
         }
