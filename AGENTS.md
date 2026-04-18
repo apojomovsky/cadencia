@@ -134,6 +134,14 @@ permission — apply good judgment:
 Use the same conventional commit types. Do not batch unrelated work into a single commit
 just because it happened in the same conversation.
 
+### Pre-commit hook
+
+A ruff-based pre-commit hook lives in `scripts/pre-commit`. It runs automatically on every
+`git commit` and blocks commits with lint errors. The hook is installed automatically the
+first time you run `make lint`, `make lint-fix`, `make test`, `make bootstrap`, or
+`make setup-dev` — no manual step required. If you get a lint error on commit, run
+`make lint-fix` and re-stage before retrying.
+
 ---
 
 ## When implementing a new feature or fixing a bug

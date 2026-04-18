@@ -3,11 +3,14 @@
 COMPOSE := docker compose
 UV      := uv
 
-.PHONY: help up down restart build dev logs shell test lint lint-fix setup-dev bootstrap backup restore nuke
+.PHONY: help up down restart build dev logs shell test lint lint-fix setup-dev bootstrap backup restore nuke install-hooks
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
+
+install-hooks: ## Install git pre-commit hook (idempotent)
+	@bash scripts/setup-dev.sh
 
 # --- Stack ---
 
@@ -34,13 +37,13 @@ shell: ## Open a shell in the app container
 
 # --- Quality ---
 
-test: ## Run the test suite inside the app container
+test: install-hooks ## Run the test suite inside the app container
 	$(COMPOSE) exec app python -m pytest /app/tests/ -v
 
-lint: ## Run ruff linter
+lint: install-hooks ## Run ruff linter
 	ruff check app/src/
 
-lint-fix: ## Run ruff linter with auto-fix
+lint-fix: install-hooks ## Run ruff linter with auto-fix
 	ruff check --fix --unsafe-fixes app/src/
 
 # --- Setup ---
@@ -51,7 +54,7 @@ backup: ## Trigger a manual backup now
 restore: ## Restore from backup: make restore FILE=path.tar.gz (local) or make restore (Drive)
 	@bash scripts/restore.sh $(FILE)
 
-bootstrap: ## Interactive setup wizard (writes .env and optional override)
+bootstrap: install-hooks ## Interactive setup wizard (writes .env and optional override)
 	@bash scripts/bootstrap.sh
 
 nuke: ## DESTROY the database and all data (irreversible)
@@ -66,6 +69,5 @@ nuke: ## DESTROY the database and all data (irreversible)
 	 fi
 	@$(COMPOSE) up -d
 
-setup-dev: ## Install dev dependencies and git hooks (run once)
+setup-dev: install-hooks ## Install dev dependencies and git hooks (run once)
 	$(UV) pip install -e "app/[dev]"
-	@bash scripts/setup-dev.sh

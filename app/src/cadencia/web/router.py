@@ -25,8 +25,7 @@ from cadencia.services.people import (
     update_person_full,
 )
 from cadencia.services.queries import get_person_overview, whats_stale
-from cadencia.services.stakeholders import create_stakeholder
-from cadencia.services.stakeholders import get_stakeholder
+from cadencia.services.stakeholders import create_stakeholder, get_stakeholder
 from cadencia.services.stakeholders import list_stakeholders as list_stakeholders_svc
 from cadencia.services.stakeholders import update_stakeholder as update_stakeholder_svc
 
