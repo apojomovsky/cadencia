@@ -3,7 +3,7 @@
 COMPOSE := docker compose
 UV      := uv
 
-.PHONY: help up down restart build dev logs shell test lint lint-fix setup-dev bootstrap nuke
+.PHONY: help up down restart build dev logs shell test lint lint-fix setup-dev bootstrap backup restore nuke
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -47,6 +47,9 @@ lint-fix: ## Run ruff linter with auto-fix
 
 backup: ## Trigger a manual backup now
 	$(COMPOSE) exec backup /usr/local/bin/backup.sh --now
+
+restore: ## Restore from backup: make restore FILE=path.tar.gz (local) or make restore (Drive)
+	@bash scripts/restore.sh $(FILE)
 
 bootstrap: ## Interactive setup wizard (writes .env and optional override)
 	@bash scripts/bootstrap.sh

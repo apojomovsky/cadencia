@@ -3,8 +3,9 @@
 # Restores the database and context files from a Google Drive backup.
 #
 # Usage (run from repo root):
-#   ./scripts/restore.sh                                          # lists backups, prompts
-#   ./scripts/restore.sh cadencia-20260415-030013.tar.gz         # restore specific file
+#   ./scripts/restore.sh                                          # lists Drive backups, prompts
+#   ./scripts/restore.sh cadencia-20260415-030013.tar.gz         # restore by name from Drive
+#   ./scripts/restore.sh ~/Downloads/cadencia-20260415.tar.gz   # restore from local file
 
 set -euo pipefail
 
@@ -16,21 +17,39 @@ VOLUME_NAME="cadencia_data"
 log() { echo "==> $*"; }
 die() { echo "ERROR: $*" >&2; exit 1; }
 
-command -v rclone >/dev/null 2>&1 || die "rclone is not installed."
-command -v docker  >/dev/null 2>&1 || die "docker is not installed."
-[[ -f "$RCLONE_CONFIG_FILE" ]] || die "rclone config not found at ${RCLONE_CONFIG_FILE}. Run 'rclone config' first and copy to secrets/rclone.conf."
+command -v docker >/dev/null 2>&1 || die "docker is not installed."
 
 BACKUP_FILE="${1:-}"
+LOCAL_FILE=""
+
+if [[ -n "$BACKUP_FILE" && -f "$BACKUP_FILE" ]]; then
+    LOCAL_FILE="$BACKUP_FILE"
+    BACKUP_FILE="$(basename "$LOCAL_FILE")"
+fi
 
 if [[ -z "$BACKUP_FILE" ]]; then
-    log "Available backups in ${RCLONE_REMOTE}:${BACKUP_DEST_PATH}/ (newest first):"
+    [[ -f "$RCLONE_CONFIG_FILE" ]] || die "rclone config not found at ${RCLONE_CONFIG_FILE}. Run 'rclone config' first and copy to secrets/rclone.conf."
+    command -v rclone >/dev/null 2>&1 || die "rclone is not installed."
+    mapfile -t BACKUPS < <(
+        rclone --config="$RCLONE_CONFIG_FILE" lsf "${RCLONE_REMOTE}:${BACKUP_DEST_PATH}/" \
+            | grep -E '^cadencia-.*\.(tar\.gz|db\.gz)$' \
+            | sort -r \
+            | head -20
+    )
+    [[ ${#BACKUPS[@]} -gt 0 ]] || die "No backups found in ${RCLONE_REMOTE}:${BACKUP_DEST_PATH}/"
+    LATEST="${BACKUPS[0]}"
+    log "Available backups (newest first):"
     echo ""
-    rclone --config="$RCLONE_CONFIG_FILE" lsf "${RCLONE_REMOTE}:${BACKUP_DEST_PATH}/" \
-        | grep -E '^cadencia-.*\.(tar\.gz|db\.gz)$' \
-        | sort -r \
-        | head -20
+    for f in "${BACKUPS[@]}"; do
+        if [[ "$f" == "$LATEST" ]]; then
+            echo "  * ${f}  [most recent]"
+        else
+            echo "    ${f}"
+        fi
+    done
     echo ""
-    read -rp "Enter filename to restore (Ctrl+C to cancel): " BACKUP_FILE
+    read -rp "Enter filename to restore, or press Enter for most recent [${LATEST}]: " BACKUP_FILE
+    BACKUP_FILE="${BACKUP_FILE:-$LATEST}"
 fi
 
 [[ -n "$BACKUP_FILE" ]] || die "No backup file specified."
@@ -46,10 +65,17 @@ read -rp "Type 'yes' to continue: " confirm
 
 TMP_FILE="/tmp/${BACKUP_FILE}"
 
-log "Downloading ${BACKUP_FILE}..."
-rclone --config="$RCLONE_CONFIG_FILE" copy \
-    "${RCLONE_REMOTE}:${BACKUP_DEST_PATH}/${BACKUP_FILE}" /tmp/
-[[ -f "$TMP_FILE" ]] || die "Download failed: file not found at ${TMP_FILE}"
+if [[ -n "$LOCAL_FILE" ]]; then
+    log "Using local file: ${LOCAL_FILE}"
+    cp "$LOCAL_FILE" "$TMP_FILE"
+else
+    [[ -f "$RCLONE_CONFIG_FILE" ]] || die "rclone config not found at ${RCLONE_CONFIG_FILE}. Run 'rclone config' first and copy to secrets/rclone.conf."
+    command -v rclone >/dev/null 2>&1 || die "rclone is not installed."
+    log "Downloading ${BACKUP_FILE} from Google Drive..."
+    rclone --config="$RCLONE_CONFIG_FILE" copy \
+        "${RCLONE_REMOTE}:${BACKUP_DEST_PATH}/${BACKUP_FILE}" /tmp/
+    [[ -f "$TMP_FILE" ]] || die "Download failed: file not found at ${TMP_FILE}"
+fi
 
 log "Stopping docker compose stack..."
 docker compose down
@@ -101,4 +127,4 @@ fi
 
 rm -f "$TMP_FILE"
 
-log "Restore complete. Start the stack with: docker compose up -d"
+log "Restore complete. Start the stack with: make up"

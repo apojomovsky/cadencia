@@ -121,6 +121,19 @@ Move a checked item to the "Completed" section (at the bottom of PROGRESS.md) on
 entire phase it belongs to is done and verified. Include the commit SHA. This keeps the
 active checklist short and the history readable.
 
+### Agent-initiated commits (no PROGRESS.md item)
+
+For work that does not map to a checklist item (tooling improvements, script fixes, DX
+changes), commit when a coherent, self-contained unit of work is complete. Do not ask for
+permission — apply good judgment:
+
+- A single logical change (e.g., "add `make restore` target") → one commit when done.
+- A series of small related tweaks made in one session → one commit covering all of them.
+- Unrelated changes touched in the same session → separate commits.
+
+Use the same conventional commit types. Do not batch unrelated work into a single commit
+just because it happened in the same conversation.
+
 ---
 
 ## When implementing a new feature or fixing a bug
