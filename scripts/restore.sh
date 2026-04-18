@@ -80,7 +80,7 @@ fi
 log "Stopping docker compose stack..."
 docker compose down
 
-BIND_DIR="$(grep -s 'cadencia:/data' docker-compose.override.yml | awk -F: '{print $1}' | xargs)"
+BIND_DIR="$(grep -s 'cadencia:/data' docker-compose.override.yml | head -1 | awk -F: '{print $1}' | sed 's/^[[:space:]-]*//' | xargs)"
 
 if [[ -n "$BIND_DIR" ]]; then
     log "Using bind mount: ${BIND_DIR}"
