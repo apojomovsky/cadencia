@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ stakeholder.name }} | Cadencia{% endblock %}
+{% block nav_stakeholders %}active{% endblock %}
+
+{% block content %}
+<a class="back-link" href="/stakeholders">&larr; Stakeholders</a>
+<h2 style="margin-bottom: 24px;">Edit {{ stakeholder.name }}</h2>
+
+<form class="person-form" method="post" action="/stakeholders/{{ stakeholder.id }}">
+  <div class="field">
+    <label for="name">Name *</label>
+    <input id="name" type="text" name="name" required value="{{ stakeholder.name }}">
+  </div>
+  <div class="field">
+    <label for="type">Type</label>
+    <select id="type" name="type">
+      <option value="am" {% if stakeholder.type == "am" %}selected{% endif %}>Account Manager</option>
+      <option value="client" {% if stakeholder.type == "client" %}selected{% endif %}>Client</option>
+      <option value="internal" {% if stakeholder.type == "internal" %}selected{% endif %}>Internal</option>
+      <option value="other" {% if stakeholder.type == "other" %}selected{% endif %}>Other</option>
+    </select>
+  </div>
+  <div class="field">
+    <label for="organization">Organization</label>
+    <input id="organization" type="text" name="organization" value="{{ stakeholder.organization or '' }}">
+  </div>
+  <div class="field">
+    <label for="aliases">Also known as</label>
+    <input id="aliases" type="text" name="aliases"
+      placeholder="Comma-separated, e.g. Agus, Agus Alba"
+      value="{{ stakeholder.aliases | join(', ') }}">
+  </div>
+  <div class="field">
+    <label for="notes">Notes</label>
+    <input id="notes" type="text" name="notes" value="{{ stakeholder.notes or '' }}">
+  </div>
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Save changes</button>
+    <a href="/stakeholders" class="btn">Cancel</a>
+  </div>
+</form>
+{% endblock %}

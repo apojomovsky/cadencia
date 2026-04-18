@@ -26,7 +26,9 @@ from cadencia.services.people import (
 )
 from cadencia.services.queries import get_person_overview, whats_stale
 from cadencia.services.stakeholders import create_stakeholder
+from cadencia.services.stakeholders import get_stakeholder
 from cadencia.services.stakeholders import list_stakeholders as list_stakeholders_svc
+from cadencia.services.stakeholders import update_stakeholder as update_stakeholder_svc
 
 router = APIRouter(include_in_schema=False)
 
@@ -542,6 +544,49 @@ async def stakeholders_create(
         notes=str(form.get("notes", "")) or None,
     )
     await create_stakeholder(conn, data, owner_id)
+    return RedirectResponse("/stakeholders", status_code=303)
+
+
+@router.get("/stakeholders/{stakeholder_id}/edit", response_class=HTMLResponse)
+async def stakeholder_edit_form(
+    request: Request,
+    stakeholder_id: str,
+    conn: AsyncConnection = Depends(get_db),
+    owner_id: str = Depends(get_owner_id),
+) -> HTMLResponse:
+    try:
+        stakeholder = await get_stakeholder(conn, stakeholder_id, owner_id)
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Stakeholder not found")
+    return templates.TemplateResponse(
+        request,
+        "stakeholder_edit.html",
+        {"stakeholder": stakeholder, **_backup_context()},
+    )
+
+
+@router.post("/stakeholders/{stakeholder_id}", response_class=HTMLResponse)
+async def stakeholder_edit_save(
+    request: Request,
+    stakeholder_id: str,
+    conn: AsyncConnection = Depends(get_db),
+    owner_id: str = Depends(get_owner_id),
+) -> RedirectResponse:
+    form = await request.form()
+    raw_aliases = str(form.get("aliases", "")).strip()
+    aliases = [a.strip() for a in raw_aliases.split(",") if a.strip()]
+    from cadencia.models.stakeholders import UpdateStakeholderInput
+    data = UpdateStakeholderInput(
+        name=str(form.get("name", "")).strip() or None,
+        type=str(form.get("type", "")).strip() or None,  # type: ignore[arg-type]
+        organization=str(form.get("organization", "")).strip() or None,
+        notes=str(form.get("notes", "")).strip() or None,
+        aliases=aliases,
+    )
+    try:
+        await update_stakeholder_svc(conn, stakeholder_id, data, owner_id, source="web")
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Stakeholder not found")
     return RedirectResponse("/stakeholders", status_code=303)
 
 
