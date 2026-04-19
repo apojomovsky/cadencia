@@ -16,6 +16,7 @@ from cadencia.models.queries import (
     StalenessReport,
 )
 from cadencia.services.action_items import get_open_action_items
+from cadencia.services.activities import list_active_activities
 from cadencia.services.allocations import get_current_allocation
 from cadencia.services.observations import list_observations
 from cadencia.services.one_on_ones import _row_to_one_on_one, get_last_one_on_one
@@ -202,6 +203,7 @@ async def get_person_overview(
         since=ninety_days_ago,
         include_sensitive=include_sensitive,
     )
+    active_activities = await list_active_activities(conn, person_id, owner_id)
 
     # Next scheduled (uncompleted) 1:1
     result = await conn.execute(
@@ -251,4 +253,5 @@ async def get_person_overview(
         last_one_on_one_date=last_oo.scheduled_date if last_oo else None,
         recent_observations=recent_obs,
         next_expected_date=_next_expected,
+        active_activities=active_activities,
     )

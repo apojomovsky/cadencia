@@ -5,6 +5,7 @@ from datetime import date
 from pydantic import BaseModel
 
 from cadencia.models.action_items import ActionItem
+from cadencia.models.activities import Activity
 from cadencia.models.allocations import Allocation
 from cadencia.models.observations import Observation
 from cadencia.models.one_on_ones import OneOnOne
@@ -73,3 +74,4 @@ class PersonOverview(BaseModel):
     last_one_on_one_date: date | None
     recent_observations: list[Observation]  # last 90 days, normal sensitivity only
     next_expected_date: date | None
+    active_activities: list[Activity]

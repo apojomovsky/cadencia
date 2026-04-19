@@ -286,6 +286,22 @@ CREATE TABLE allocations (
   created_at           TEXT NOT NULL,
   updated_at           TEXT NOT NULL
 );
+
+-- Activities: elective badge roles held in parallel to allocations
+-- e.g. trainer, tech_mentor, operations_owner.  A person may hold multiple at once.
+CREATE TABLE activities (
+  id          TEXT PRIMARY KEY,
+  owner_id    TEXT NOT NULL DEFAULT 'default',
+  person_id   TEXT NOT NULL REFERENCES people(id),
+  role        TEXT NOT NULL,    -- trainer / tech_mentor / coach / operations_owner /
+                                --   operations_lead / community_rep / team_manager / account_manager
+  power       TEXT,             -- power band: P1 / P2 / P3 / P4, nullable
+  started_on  TEXT NOT NULL,    -- ISO 8601 date
+  ended_on    TEXT,             -- nullable = currently active
+  notes       TEXT,
+  created_at  TEXT NOT NULL,
+  updated_at  TEXT NOT NULL
+);
 ```
 
 ### 3.2 Naming and typing conventions
@@ -419,7 +435,7 @@ Both containers open the same SQLite file. SQLite WAL mode is enabled to allow c
 readers. Only one writer at a time: SQLite's write locking handles this; it is acceptable for
 single-user load.
 
-### 5.2 The seven MCP tools
+### 5.2 The nine MCP tools
 
 Tool names, descriptions, and schemas are the public API. Do not change them without updating
 this section first.
@@ -602,6 +618,45 @@ Output:
                              "days_overdue": "integer"}]
 }
 ```
+
+---
+
+**`add_activity`**
+
+Record that a person has taken on an elective badge activity. Activities run in parallel to
+client allocations; a person may hold multiple at once.
+
+Input:
+```json
+{
+  "person": {"type": "string", "description": "Name (partial match ok) or UUID."},
+  "role": {"type": "string", "description": "One of: trainer, tech_mentor, coach, operations_owner, operations_lead, community_rep, team_manager, account_manager."},
+  "power": {"type": "string | null", "description": "power band: P1–P4. Optional."},
+  "started_on": {"type": "string | null", "description": "ISO 8601 date. Defaults to today."},
+  "notes": {"type": "string | null", "description": "Optional free-form context."}
+}
+```
+
+Output: the created `Activity` object.
+
+---
+
+**`end_activity`**
+
+Mark an elective badge activity as ended. Ends the most recent open activity with the given role.
+
+Input:
+```json
+{
+  "person": {"type": "string", "description": "Name (partial match ok) or UUID."},
+  "role": {"type": "string", "description": "The activity role to end."},
+  "ended_on": {"type": "string | null", "description": "ISO 8601 date. Defaults to today."}
+}
+```
+
+Output: the updated `Activity` object with `ended_on` set.
+
+---
 
 ### 5.3 Error responses
 
