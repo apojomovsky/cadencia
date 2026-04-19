@@ -227,6 +227,10 @@ Use the `list_context` MCP tool to discover what files are available before answ
 question that might be informed by them (performance frameworks, email dumps, meeting
 transcripts, spreadsheets, process docs). Use `read_context` to retrieve a specific file.
 
+The file `activity_roles.md` maps the generic role codes used in the database (e.g. `trainer`,
+`tech_mentor`, `coach`) to their company-specific names. Always check it when working with
+activity roles so you can present and accept the company-specific terminology in conversation.
+
 ### Frontmatter requirement
 
 Every context file must begin with a YAML frontmatter block. Required fields vary by type:

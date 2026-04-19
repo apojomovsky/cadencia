@@ -631,7 +631,7 @@ Input:
 {
   "person": {"type": "string", "description": "Name (partial match ok) or UUID."},
   "role": {"type": "string", "description": "One of: trainer, tech_mentor, coach, operations_owner, operations_lead, community_rep, team_manager, account_manager."},
-  "power": {"type": "string | null", "description": "power band: P1–P4. Optional."},
+  "power": {"type": "string | null", "description": "Power band: P1–P4. Optional."},
   "started_on": {"type": "string | null", "description": "ISO 8601 date. Defaults to today."},
   "notes": {"type": "string | null", "description": "Optional free-form context."}
 }
