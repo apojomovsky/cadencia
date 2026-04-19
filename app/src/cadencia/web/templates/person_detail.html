@@ -68,6 +68,14 @@
     {% else %}
     <p class="empty">No current allocation on record.</p>
     {% endif %}
+
+    {% if overview.active_activities %}
+    <div class="activity-chips" style="margin-top: 10px;">
+      {% for act in overview.active_activities %}
+        <span class="badge activity">{{ act.role | replace("_", " ") | title }}{% if act.power %} · {{ act.power }}{% endif %}</span>
+      {% endfor %}
+    </div>
+    {% endif %}
   </div>
 </div>
 

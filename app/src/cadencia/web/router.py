@@ -157,6 +157,7 @@ async def people_list(
                 "current_allocation_percent": p.current_allocation_percent,
                 "current_allocation_label": p.current_allocation_label,
                 "alloc_stale_days": alloc_ctx["alloc_stale_days"],
+                "active_activity_roles": p.active_activity_roles,
                 **oo_ctx,
             }
         )

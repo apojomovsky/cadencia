@@ -59,6 +59,11 @@
       <span class="badge muted">no alloc</span>
     {% endif %}
 
+    {# Activity chips #}
+    {% for role in person.active_activity_roles %}
+      <span class="badge activity">{{ role | replace("_", " ") | title }}</span>
+    {% endfor %}
+
     {# 1:1 badge #}
     {% if person.one_on_one_days_ago is none %}
       <span class="badge warn">1:1 never</span>

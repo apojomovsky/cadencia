@@ -118,6 +118,16 @@ async def list_people(
         )
         ai_count = ai_result.scalar() or 0
 
+        act_result = await conn.execute(
+            text(
+                "SELECT role FROM activities"
+                " WHERE person_id = :pid AND owner_id = :owner AND ended_on IS NULL"
+                " ORDER BY started_on ASC"
+            ),
+            {"pid": person_id, "owner": owner_id},
+        )
+        active_roles = [row[0] for row in act_result.fetchall()]
+
         cadence = r.get("one_on_one_cadence_days") or settings.one_on_one_stale_days
         last_oo_date_obj = date.fromisoformat(str(oo_row[0])) if oo_row and oo_row[0] else None
         if last_oo_date_obj and not (next_oo_row and next_oo_row[0]):
@@ -150,6 +160,7 @@ async def list_people(
                 recurrence_weekday=r.get("recurrence_weekday"),
                 recurrence_week_of_month=r.get("recurrence_week_of_month"),
                 next_expected_date=next_expected,
+                active_activity_roles=active_roles,
             )
         )
     return summaries
@@ -211,6 +222,7 @@ async def resolve_person(
             recurrence_weekday=r.get("recurrence_weekday"),
             recurrence_week_of_month=r.get("recurrence_week_of_month"),
             next_expected_date=None,
+            active_activity_roles=[],
         )
     ]
 

@@ -21,6 +21,7 @@ class PersonSummary(BaseModel):
     recurrence_weekday: int | None
     recurrence_week_of_month: int | None
     next_expected_date: date | None
+    active_activity_roles: list[str] = Field(default_factory=list)
 
 
 class PersonDetail(BaseModel):
