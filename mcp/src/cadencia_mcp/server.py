@@ -13,6 +13,7 @@ from starlette.routing import Mount, Route
 from cadencia.config import settings
 from cadencia.db.connection import close_engine, get_connection
 from cadencia.db.migrations import run_migrations
+from cadencia.models.activities import AddActivityInput
 from cadencia.models.allocations import UpdateAllocationInput
 from cadencia.models.feedback import AddFeedbackInput
 from cadencia.models.observations import AddObservationInput, EditObservationInput
@@ -22,6 +23,9 @@ from cadencia.models.stakeholders import CreateStakeholderInput, UpdateStakehold
 from cadencia.services import people as people_svc
 from cadencia.services.action_items import complete_action_item as svc_complete
 from cadencia.services.action_items import get_open_action_items as svc_list_action_items
+from cadencia.services.activities import add_activity as svc_add_activity
+from cadencia.services.activities import end_activity as svc_end_activity
+from cadencia.services.activities import list_active_activities as svc_list_activities
 from cadencia.services.allocations import confirm_allocation as svc_confirm_alloc
 from cadencia.services.allocations import get_current_allocation
 from cadencia.services.allocations import update_allocation as svc_update_alloc
@@ -111,6 +115,7 @@ async def get_person(person: str) -> dict[str, Any]:
             return _err("Ambiguous", f"Multiple people match {person!r}", candidates=e.candidates)
 
         overview = await get_person_overview(conn, detail.id, settings.owner_id)
+        active_activities = await svc_list_activities(conn, detail.id, settings.owner_id)
 
     return {
         "person_id": overview.person_id,
@@ -140,6 +145,7 @@ async def get_person(person: str) -> dict[str, Any]:
         "recent_observations": [
             obs.model_dump(mode="json") for obs in overview.recent_observations
         ],
+        "active_activities": [a.model_dump(mode="json") for a in active_activities],
     }
 
 
@@ -816,6 +822,56 @@ async def edit_observation(
 
 
 @mcp.tool()
+async def add_activity(
+    person: str,
+    role: str,
+    power: str | None = None,
+    started_on: str | None = None,
+    notes: str | None = None,
+) -> dict[str, Any]:
+    """Record an ongoing elective role or badge activity for a direct report (e.g. trainer, operations_owner). Activities run in parallel with client allocations."""
+    async with get_connection() as conn:
+        try:
+            detail = await _resolve(conn, person)
+        except NotFoundError:
+            return _err("NotFound", f"No person found matching {person!r}")
+        except AmbiguousError as e:
+            return _err("Ambiguous", f"Multiple people match {person!r}", candidates=e.candidates)
+
+        activity = await svc_add_activity(
+            conn,
+            AddActivityInput(
+                person_id=detail.id,
+                role=role,  # type: ignore[arg-type]
+                power=power,  # type: ignore[arg-type]
+                started_on=started_on,  # type: ignore[arg-type]
+                notes=notes,
+            ),
+            owner_id=settings.owner_id,
+            source="mcp",
+        )
+
+    return activity.model_dump(mode="json")
+
+
+@mcp.tool()
+async def end_activity(activity_id: str) -> dict[str, Any]:
+    """Mark an ongoing activity as ended. Pass the activity_id returned by add_activity."""
+    async with get_connection() as conn:
+        try:
+            activity = await svc_end_activity(
+                conn,
+                activity_id,
+                owner_id=settings.owner_id,
+                source="mcp",
+            )
+        except NotFoundError:
+            return _err("NotFound", f"Activity not found: {activity_id!r}")
+
+    return activity.model_dump(mode="json")
+
+
+@mcp.tool()
 async def list_one_on_ones(
     person: str,
     limit: int = 20,
@@ -874,6 +930,7 @@ async def combined_lifespan(app: Any):
 _mcp_app.router.lifespan_context = combined_lifespan
 _mcp_app.add_route("/health", health)
 app = _mcp_app
+
 
 if __name__ == "__main__":
     mcp.run(transport="streamable-http")
