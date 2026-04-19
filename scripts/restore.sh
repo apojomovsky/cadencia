@@ -129,4 +129,19 @@ fi
 
 rm -f "$TMP_FILE"
 
-log "Restore complete. Start the stack with: make up"
+if [[ -n "$BIND_DIR" ]]; then
+    DATA_DB="${BIND_DIR}/em.db"
+    DATA_CONTEXT="${BIND_DIR}/context"
+else
+    DATA_DB="(docker volume ${VOLUME_NAME}:/data/em.db)"
+    DATA_CONTEXT="(docker volume ${VOLUME_NAME}:/data/context)"
+fi
+
+[[ -n "$BIND_DIR" && ! -f "${BIND_DIR}/em.db" ]] && die "Restore failed: em.db not found at ${BIND_DIR}/em.db"
+
+log "Restore complete."
+echo ""
+echo "  Database : ${DATA_DB}"
+echo "  Context  : ${DATA_CONTEXT}"
+echo ""
+echo "Run 'make up' to start."
